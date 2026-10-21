@@ -10,16 +10,20 @@
 <body>
 <div id="login" hidden>
   <form class="lg" data-f="login">
+    <select class="lang" aria-label="Language"><option value="hi">Hinglish</option><option value="en">English</option><option value="bn">বাংলা</option></select>
     <h1>Malda Court Connect</h1>
-    <p>Chamber ka case diary aur fee book</p>
-    <label>Email<input name="email" type="email" autocomplete="username" required></label>
-    <label>Password<input name="password" type="password" autocomplete="current-password" required></label>
+    <p data-t="tagline"></p>
+    <label><span data-t="email"></span><input name="email" type="email" autocomplete="username" required></label>
+    <label><span data-t="password"></span><input name="password" type="password" autocomplete="current-password" required></label>
     <p id="err" role="alert"></p>
-    <button class="pri">Login karein</button>
+    <button class="pri" data-t="loginbtn"></button>
   </form>
 </div>
 <div id="app" hidden>
-  <header><div><strong id="who"></strong><small id="bar"></small></div><button class="ghost" data-a="out">Logout</button></header>
+  <header>
+    <div><strong id="who"></strong><small id="bar"></small></div>
+    <div class="hr"><select class="lang" aria-label="Language"><option value="hi">Hinglish</option><option value="en">English</option><option value="bn">বাংলা</option></select><button class="ghost" data-a="out" data-t="logout"></button></div>
+  </header>
   <nav id="tabs"></nav>
   <main id="view"></main>
 </div>

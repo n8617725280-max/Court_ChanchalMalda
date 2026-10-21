@@ -1,7 +1,7 @@
 :root{--ink:#14181F;--paper:#F4F5F7;--line:#D8DCE2;--red:#8C2F39;--mut:#5B6472}
 *{box-sizing:border-box}
-body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:env(safe-area-inset-bottom)}
-h1,h2,h3{font-family:Georgia,"Times New Roman",serif;margin:0}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Nirmala UI","Noto Sans Bengali",sans-serif;padding-bottom:env(safe-area-inset-bottom)}
+h1,h2,h3{font-family:Georgia,"Times New Roman","Nirmala UI","Noto Sans Bengali",serif;margin:0}
 header{background:var(--ink);color:#fff;display:flex;justify-content:space-between;align-items:center;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;position:sticky;top:0;z-index:5}
 header small{display:block;opacity:.7;font-size:12px}
 nav{display:flex;overflow-x:auto;background:#fff;border-bottom:1px solid var(--line);padding:0 8px}
@@ -45,3 +45,8 @@ dialog{border:0;border-radius:14px;padding:20px;width:min(92vw,400px)}
 dialog::backdrop{background:#0008}
 dialog h3{margin-bottom:4px}
 #toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;max-width:90vw;z-index:20}
+.hr{display:flex;gap:8px;align-items:center}
+.lang{width:auto;margin:0;padding:6px 8px;min-height:36px}
+header .lang{background:#fff1;color:#fff;border-color:#fff5}
+header .lang option{color:#000}
+.lg .lang{float:right}
