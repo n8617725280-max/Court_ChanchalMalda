@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Naya chamber banayein</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<form class="lg" id="f">
+  <h1>Naya chamber banayein</h1>
+  <p>Sirf aapke liye. Setup key ke bina kuch nahi banega.</p>
+  <label>Setup key<input name="key" type="password" required autocomplete="off"></label>
+  <label>Chamber ka naam<input name="chamber" required maxlength="100"></label>
+  <label>Vakil ka naam<input name="name" required maxlength="80"></label>
+  <label>Vakil ka email<input name="email" type="email" required></label>
+  <label>Password (8+ akshar)<input name="password" type="password" minlength="8" required autocomplete="new-password"></label>
+  <p id="out" role="status"></p>
+  <button class="pri">Chamber banayein</button>
+  <p><a href="/">Login page par jayein</a></p>
+</form>
+<script src="/setup.js"></script>
+</body>
+</html>

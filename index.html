@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14181F">
+<title>Malda Court Connect</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div id="login" hidden>
+  <form class="lg" data-f="login">
+    <h1>Malda Court Connect</h1>
+    <p>Chamber ka case diary aur fee book</p>
+    <label>Email<input name="email" type="email" autocomplete="username" required></label>
+    <label>Password<input name="password" type="password" autocomplete="current-password" required></label>
+    <p id="err" role="alert"></p>
+    <button class="pri">Login karein</button>
+  </form>
+</div>
+<div id="app" hidden>
+  <header><div><strong id="who"></strong><small id="bar"></small></div><button class="ghost" data-a="out">Logout</button></header>
+  <nav id="tabs"></nav>
+  <main id="view"></main>
+</div>
+<dialog id="dlg"></dialog>
+<div id="toast" role="status" hidden></div>
+<script src="/app.js"></script>
+</body>
+</html>
