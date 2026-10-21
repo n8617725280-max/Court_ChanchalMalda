@@ -2,10 +2,10 @@
 
 Case diary, next date, fees ledger aur backup. Laptop aur mobile dono par chalta hai. Net na ho to entry phone mein save hoti hai aur net aate hi sync hoti hai.
 
-## Folder
+## Files (sab ek hi jagah, koi folder nahi)
 ```
-server.js  package.json  supabase.sql  .env.example  .gitignore
-public/  index.html  app.js  app.css  sw.js  setup.html  setup.js
+server.js  package.json  supabase.sql  .env.example  .gitignore  README.md
+index.html  app.js  app.css  sw.js  setup.html  setup.js
 ```
 
 ## 1. Supabase

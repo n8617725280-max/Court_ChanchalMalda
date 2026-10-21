@@ -16,7 +16,10 @@ const app = express();
 app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: { useDefaults: true, directives: { 'upgrade-insecure-requests': null } } }));
 app.use(express.json({ limit: '100kb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+// Saari files ek hi folder mein hain. Sirf ye allowed files bahar dikhengi (server.js, package.json wagairah nahi).
+const PAGES = ['index.html', 'app.js', 'app.css', 'sw.js', 'setup.html', 'setup.js'];
+app.get('/', (q, s) => s.sendFile('index.html', { root: __dirname }));
+PAGES.forEach(f => app.get('/' + f, (q, s) => s.sendFile(f, { root: __dirname })));
 
 // ---------- helpers ----------
 const wrap = f => (q, s, n) => Promise.resolve(f(q, s, n)).catch(e => { console.error(e); s.status(500).json({ error: 'Server error, dobara try karein' }); });
