@@ -85,3 +85,5 @@ create table if not exists tasks (
 create index if not exists tasks_chamber on tasks(chamber_id, done);
 alter table tasks enable row level security;
 revoke all on tasks from anon, authenticated;
+
+alter table chambers add column if not exists active boolean not null default true;

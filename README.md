@@ -39,3 +39,7 @@ Browser mein `/setup.html` kholein (jaise https://aapka-app.onrender.com/setup.h
 Pehle Supabase SQL Editor mein `update-1.sql` ek baar Run karein, phir saari files GitHub par dobara upload karein.
 Naya: WhatsApp reminder, case edit, Excel/CSV import, Kaam (tasks), Calendar, password reset (Team tab), Install App button.
 Software support: 7602292599
+
+## Update 2 (v3f): Owner Panel
+Pehle Supabase SQL Editor mein `update-2.sql` Run karein, phir saari files upload karein.
+Owner Panel: /owner.html (Setup key se khulta hai). Chamber banana/band karna, kisi bhi chamber mein user banana (ek saath bahut bhi), password/naam/email/mobile badalna.

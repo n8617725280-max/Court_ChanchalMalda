@@ -19,6 +19,15 @@
   <button class="pri">Chamber banayein</button>
   <p><a href="/">Login page par jayein</a></p>
 </form>
+<form class="lg" id="r" style="margin-top:24px">
+  <h1>Password reset</h1>
+  <p>Vakil ya kisi member ka password bhool jaye to yahan naya daalein.</p>
+  <label>Setup key<input name="key" type="password" required autocomplete="off"></label>
+  <label>Us member ka email<input name="email" type="email" required></label>
+  <label>Naya password (8+ akshar)<input name="password" type="password" minlength="8" required autocomplete="new-password"></label>
+  <p id="out2" role="status"></p>
+  <button class="pri">Password badlein</button>
+</form>
 <script src="/setup.js"></script>
 </body>
 </html>

@@ -68,7 +68,8 @@ const D = {
   duedate: ['Aakhri tareekh', 'Due date', 'শেষ তারিখ'], assign: ['Kise dena hai', 'Assign to', 'কাকে দেবেন'],
   p_low: ['Kam', 'Low', 'কম'], p_medium: ['Medium', 'Medium', 'মাঝারি'], p_high: ['Zaroori', 'High', 'বেশি'],
   no_tasks: ['Koi kaam baaki nahi.', 'No pending tasks.', 'কোনো কাজ বাকি নেই।'], done_h: ['Ho gaye', 'Done', 'সম্পন্ন'],
-  cal_none: ['Is din koi hearing nahi.', 'No hearings on this day.', 'এই দিনে কোনো শুনানি নেই।']
+  cal_none: ['Is din koi hearing nahi.', 'No hearings on this day.', 'এই দিনে কোনো শুনানি নেই।'],
+  mypw: ['Mera password badlein', 'Change my password', 'আমার পাসওয়ার্ড বদলান'], curpw: ['Abhi ka password', 'Current password', 'বর্তমান পাসওয়ার্ড']
 };
 const t = (k, ...a) => D[k][IDX[LANG]].replace(/\{(\d)\}/g, (_, i) => a[i]);
 const E = {   // server ke Hinglish error ka anuvad
@@ -82,7 +83,7 @@ const E = {   // server ke Hinglish error ka anuvad
   'Case no ya CNR zaroori hai': ['Case no or CNR is required', 'কেস নম্বর বা CNR দেওয়া জরুরি'], 'Date galat hai': ['Invalid date', 'তারিখ ভুল'],
   'Junior/Client galat hai': ['Invalid junior/client', 'জুনিয়র/ক্লায়েন্ট ভুল'], 'Ye CNR is chamber mein pehle se hai': ['This CNR already exists in this chamber', 'এই CNR এই চেম্বারে আগে থেকেই আছে'],
   'Case save nahi hua': ['Case could not be saved', 'কেস সেভ হয়নি'], 'Case nahi mila': ['Case not found', 'কেস পাওয়া যায়নি'], 'User galat hai': ['Invalid user', 'ব্যবহারকারী ভুল'],
-  'Password 8+ akshar ka hona chahiye': ['Password must be 8+ characters', 'পাসওয়ার্ড ৮+ অক্ষরের হতে হবে'], 'Kaam ka naam zaroori hai': ['Task name is required', 'কাজের নাম দেওয়া জরুরি'], 'Kaam nahi mila': ['Task not found', 'কাজ পাওয়া যায়নি'],
+  'Password 8+ akshar ka hona chahiye': ['Password must be 8+ characters', 'পাসওয়ার্ড ৮+ অক্ষরের হতে হবে'], 'Kaam ka naam zaroori hai': ['Task name is required', 'কাজের নাম দেওয়া জরুরি'], 'Kaam nahi mila': ['Task not found', 'কাজ পাওয়া যায়নি'], 'Abhi ka password galat hai': ['Current password is wrong', 'বর্তমান পাসওয়ার্ড ভুল'], 'Chamber band hai. Support se baat karein': ['This chamber is disabled. Please contact support', 'এই চেম্বার বন্ধ আছে। সহায়তার সাথে যোগাযোগ করুন'],
   'Kuch badla nahi': ['Nothing changed', 'কিছু বদলায়নি'], 'Rakam ya type galat hai': ['Invalid amount or type', 'টাকার পরিমাণ বা ধরন ভুল']
 };
 const se = m => (LANG !== 'hi' && E[m]) ? E[m][IDX[LANG] - 1] : m;
@@ -332,6 +333,7 @@ const ACT = {
       <div class="row"><button class="pri">${t('save')}</button><button type="button" class="ghost" data-a="x">${t('close')}</button></div></form>`;
     $('#dlg').showModal();
   },
+  mypw: async () => { const c = prompt(t('curpw')); if (!c) return; const p = prompt(t('newpw')); if (!p) return; await api('/me/password', { method: 'POST', body: { current: c, password: p } }); toast(t('pw_ok')); },
   pw: async ({ id }) => { const p = prompt(t('newpw')); if (!p) return; await api('/users/' + id, { method: 'PATCH', body: { password: p } }); toast(t('pw_ok')); },
   sample: () => dl('sample.csv', csv([['Case no', 'CNR', 'Party', 'Court', 'PS', 'Stage', 'Next date', 'Mobile'], ['GR 123/24', 'WBMD010012342024', 'Md. Rahim vs State', 'ACJM Malda', 'Chanchal', 'Evidence', '2026-11-15', '9876543210']]), 'text/csv', false),
   tk: async ({ id, on }) => { if (tmp(id)) return; await send('PATCH', '/tasks/' + id, { done: on === '1' }); S.tasks.find(x => x.id === id).done = on === '1'; await kv.set('tasks', S.tasks); render(); },

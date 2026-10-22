@@ -17,7 +17,7 @@ app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: { useDefaults: true, directives: { 'upgrade-insecure-requests': null } } }));
 app.use(express.json({ limit: '1mb' }));
 // Saari files ek hi folder mein hain. Sirf ye allowed files bahar dikhengi (server.js, package.json wagairah nahi).
-const PAGES = ['index.html', 'app.js', 'app.css', 'sw.js', 'setup.html', 'setup.js', 'manifest.json', 'icon-192.png', 'icon-512.png'];
+const PAGES = ['index.html', 'app.js', 'app.css', 'sw.js', 'setup.html', 'setup.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'owner.html', 'owner.js'];
 app.get('/', (q, s) => s.sendFile('index.html', { root: __dirname }));
 PAGES.forEach(f => app.get('/' + f, (q, s) => s.sendFile(f, { root: __dirname })));
 
@@ -37,6 +37,8 @@ const auth = wrap(async (q, s, n) => {
   catch { return s.status(401).json({ error: 'Login dobara karein' }); }
   const { data: u } = await db.from('users').select('id,role,chamber_id,name,active').eq('id', p.id).maybeSingle();
   if (!u || !u.active) return s.status(401).json({ error: 'Account band hai' });
+  const { data: chm, error: chErr } = await db.from('chambers').select('active').eq('id', u.chamber_id).maybeSingle();
+  if (!chErr && chm && chm.active === false) return s.status(401).json({ error: 'Chamber band hai. Support se baat karein' });
   q.user = u; n();
 });
 const need = (...r) => (q, s, n) => r.includes(q.user.role) ? n() : s.status(403).json({ error: 'Is kaam ki ijazat nahi hai' });
@@ -61,13 +63,14 @@ async function mkUser(chamber_id, b, role) {
 }
 
 // ---------- login / setup ----------
-const loginLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false, message: { error: 'Bahut koshish ho gayi. 15 minute baad try karein' } });
+const loginLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, skipSuccessfulRequests: true, standardHeaders: true, legacyHeaders: false, message: { error: 'Bahut koshish ho gayi. 15 minute baad try karein' } });
 app.post('/api/login', loginLimit, wrap(async (q, s) => {
   const email = str(q.body.email, 120).toLowerCase(), pw = typeof q.body.password === 'string' ? q.body.password : '';
   const { data: u } = await db.from('users').select('*').eq('email', email).maybeSingle();
   const match = await bcrypt.compare(pw, u ? u.password_hash : DUMMY);
   if (!u || !u.active || !match) return s.status(401).json({ error: 'Email ya password galat hai' });
-  const { data: ch } = await db.from('chambers').select('name').eq('id', u.chamber_id).maybeSingle();
+  const { data: ch } = await db.from('chambers').select('name,active').eq('id', u.chamber_id).maybeSingle();
+  if (ch && ch.active === false) return s.status(403).json({ error: 'Chamber band hai. Support se baat karein' });
   s.json({ token: jwt.sign({ id: u.id }, JWT_SECRET, { expiresIn: '12h' }), user: { id: u.id, name: u.name, email: u.email, role: u.role, chamber: ch && ch.name } });
 }));
 
@@ -79,6 +82,72 @@ app.post('/api/setup', rateLimit({ windowMs: 60 * 60 * 1000, max: 20 }), wrap(as
   const r = await mkUser(ch.id, q.body, 'senior');
   if (r.error) { await db.from('chambers').delete().eq('id', ch.id); return s.status(400).json({ error: r.error }); }
   s.json({ chamber_id: ch.id, senior: r.data });
+}));
+
+// ---------- OWNER PANEL (sirf SETUP_KEY se) ----------
+const ROLES = ['senior', 'junior', 'munshi', 'client'];
+const ownerLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, skipSuccessfulRequests: true, standardHeaders: true, legacyHeaders: false, message: { error: 'Bahut koshish ho gayi. 15 minute baad try karein' } });
+const owner = (q, s, n) => (SETUP_KEY && SETUP_KEY.length >= 16 && same(q.headers['x-setup-key'], SETUP_KEY)) ? n() : s.status(403).json({ error: 'Not allowed' });
+app.use('/api/owner', ownerLimit, owner);
+app.get('/api/owner/chambers', wrap(async (q, s) => {
+  const chs = await all(() => db.from('chambers').select('id,name,active,created_at').order('created_at').order('id'));
+  const us = await all(() => db.from('users').select('id,chamber_id,role,name,email').order('created_at').order('id'));
+  const cnt = await Promise.all(chs.map(c => db.from('cases').select('id', { count: 'exact', head: true }).eq('chamber_id', c.id)));
+  s.json(chs.map((c, i) => { const mine = us.filter(u => u.chamber_id === c.id), sr = mine.find(u => u.role === 'senior'); return { ...c, users: mine.length, cases: cnt[i].count || 0, senior: sr ? `${sr.name || ''} ${sr.email}`.trim() : '' }; }));
+}));
+app.get('/api/owner/chambers/:id/users', wrap(async (q, s) => {
+  if (!isId(q.params.id)) return s.status(400).json({ error: 'Galat request' });
+  s.json(ok(await db.from('users').select('id,email,name,role,phone,active').eq('chamber_id', q.params.id).order('created_at')).data);
+}));
+app.patch('/api/owner/chambers/:id', wrap(async (q, s) => {
+  if (!isId(q.params.id)) return s.status(400).json({ error: 'Galat request' });
+  const u = {}; if ('active' in q.body) u.active = !!q.body.active; if (typeof q.body.name === 'string' && q.body.name.trim()) u.name = str(q.body.name, 100);
+  if (!Object.keys(u).length) return s.status(400).json({ error: 'Kuch badla nahi' });
+  ok(await db.from('chambers').update(u).eq('id', q.params.id)); s.json({ ok: 1 });
+}));
+app.post('/api/owner/users', wrap(async (q, s) => {
+  const b = q.body;
+  if (!isId(b.chamber_id) || !ROLES.includes(b.role)) return s.status(400).json({ error: 'Role galat hai' });
+  const r = await mkUser(b.chamber_id, b, b.role); r.error ? s.status(400).json({ error: r.error }) : s.json(r.data);
+}));
+app.post('/api/owner/users/bulk', wrap(async (q, s) => {
+  const rows = Array.isArray(q.body.rows) ? q.body.rows.slice(0, 100) : [];
+  if (!isId(q.body.chamber_id)) return s.status(400).json({ error: 'Galat request' });
+  let created = 0; const failed = [];
+  for (const b of rows) {
+    if (!ROLES.includes(b.role)) { failed.push({ email: b.email, error: 'Role galat hai' }); continue; }
+    const r = await mkUser(q.body.chamber_id, b, b.role); r.error ? failed.push({ email: b.email, error: r.error }) : created++;
+  }
+  s.json({ created, failed });
+}));
+app.patch('/api/owner/users/:id', wrap(async (q, s) => {
+  if (!isId(q.params.id)) return s.status(400).json({ error: 'Galat request' });
+  const b = q.body, u = {};
+  if ('active' in b) u.active = !!b.active;
+  if (b.password !== undefined) { if (!pwOk(b.password)) return s.status(400).json({ error: 'Password 8+ akshar ka hona chahiye' }); u.password_hash = await bcrypt.hash(b.password, 10); }
+  if (typeof b.name === 'string') u.name = str(b.name, 80);
+  if (typeof b.phone === 'string') u.phone = str(b.phone, 20);
+  if (typeof b.email === 'string') { const e = str(b.email, 120).toLowerCase(); if (!/^\S+@\S+\.\S+$/.test(e)) return s.status(400).json({ error: 'Email galat hai' }); u.email = e; }
+  if (!Object.keys(u).length) return s.status(400).json({ error: 'Kuch badla nahi' });
+  const { data, error } = await db.from('users').update(u).eq('id', q.params.id).select('id').maybeSingle();
+  if (error) return s.status(400).json({ error: error.code === '23505' ? 'Ye email pehle se maujood hai' : 'Save nahi hua' });
+  data ? s.json({ ok: 1 }) : s.status(404).json({ error: 'User nahi mila' });
+}));
+
+// Vakil ka password bhool jaye: sirf aap (SETUP_KEY ke saath) naya password daal sakte hain
+app.post('/api/reset-password', rateLimit({ windowMs: 60 * 60 * 1000, max: 20 }), wrap(async (q, s) => {
+  if (!SETUP_KEY || SETUP_KEY.length < 16 || !same(q.headers['x-setup-key'], SETUP_KEY)) return s.status(403).json({ error: 'Not allowed' });
+  if (!pwOk(q.body.password)) return s.status(400).json({ error: 'Password 8+ akshar ka hona chahiye' });
+  const { data } = ok(await db.from('users').update({ password_hash: await bcrypt.hash(q.body.password, 10) }).eq('email', str(q.body.email, 120).toLowerCase()).select('id').maybeSingle());
+  data ? s.json({ ok: 1 }) : s.status(404).json({ error: 'User nahi mila' });
+}));
+// Har user apna password khud badal sakta hai
+app.post('/api/me/password', auth, loginLimit, wrap(async (q, s) => {
+  const { data: u } = await db.from('users').select('password_hash').eq('id', q.user.id).single();
+  if (!(await bcrypt.compare(String(q.body.current || ''), u.password_hash))) return s.status(400).json({ error: 'Abhi ka password galat hai' });
+  if (!pwOk(q.body.password)) return s.status(400).json({ error: 'Password 8+ akshar ka hona chahiye' });
+  ok(await db.from('users').update({ password_hash: await bcrypt.hash(q.body.password, 10) }).eq('id', q.user.id));
+  s.json({ ok: 1 });
 }));
 
 // ---------- users (chamber ke andar) ----------

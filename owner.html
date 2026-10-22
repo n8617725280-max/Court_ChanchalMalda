@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Owner Panel</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div id="lock">
+  <form class="lg" id="lk">
+    <h1>Owner Panel</h1>
+    <p>Sirf aapke liye. Setup key se khulega.</p>
+    <label>Setup key<input id="key" type="password" required autocomplete="off"></label>
+    <p id="lerr" role="alert"></p>
+    <button class="pri">Kholein</button>
+  </form>
+</div>
+<div id="panel" hidden>
+  <header><strong>Owner Panel</strong><button class="ghost" data-a="lock">Band karein</button></header>
+  <main id="view">
+    <details class="add"><summary>Naya chamber aur senior vakil</summary>
+      <form data-f="newch">
+        <input name="chamber" placeholder="Chamber ka naam" required maxlength="100">
+        <input name="name" placeholder="Vakil ka naam" required maxlength="80">
+        <input name="email" type="email" placeholder="Vakil ka email" required>
+        <input name="phone" placeholder="Mobile" maxlength="20">
+        <input name="password" type="password" minlength="8" placeholder="Password (8+ akshar)" required autocomplete="new-password">
+        <button class="pri">Chamber banayein</button>
+      </form>
+    </details>
+    <p id="msg" role="status"></p>
+    <div id="list"></div>
+  </main>
+</div>
+<script src="/owner.js"></script>
+</body>
+</html>
