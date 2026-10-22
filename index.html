@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#14181F">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon-192.png">
 <title>Malda Court Connect</title>
 <link rel="stylesheet" href="/app.css">
 </head>
@@ -17,15 +19,17 @@
     <label><span data-t="password"></span><input name="password" type="password" autocomplete="current-password" required></label>
     <p id="err" role="alert"></p>
     <button class="pri" data-t="loginbtn"></button>
+    <p class="ft"><span data-t="support"></span>: <a href="tel:7602292599">7602292599</a></p>
   </form>
 </div>
 <div id="app" hidden>
   <header>
     <div><strong id="who"></strong><small id="bar"></small></div>
-    <div class="hr"><select class="lang" aria-label="Language"><option value="hi">Hinglish</option><option value="en">English</option><option value="bn">বাংলা</option></select><button class="ghost" data-a="out" data-t="logout"></button></div>
+    <div class="hr"><button class="pri" id="inst" data-a="inst" data-t="install" hidden></button><select class="lang" aria-label="Language"><option value="hi">Hinglish</option><option value="en">English</option><option value="bn">বাংলা</option></select><button class="ghost" data-a="out" data-t="logout"></button></div>
   </header>
   <nav id="tabs"></nav>
   <main id="view"></main>
+  <footer class="ft"><span data-t="support"></span>: <a href="tel:7602292599">7602292599</a></footer>
 </div>
 <dialog id="dlg"></dialog>
 <div id="toast" role="status" hidden></div>

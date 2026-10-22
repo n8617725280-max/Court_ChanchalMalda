@@ -21,7 +21,7 @@ create table if not exists users (
 create table if not exists cases (
   id uuid primary key default gen_random_uuid(),
   chamber_id uuid not null references chambers(id) on delete cascade,
-  cnr text, case_no text, party_name text, court text, ps_name text, stage text,
+  cnr text, case_no text, party_name text, court text, ps_name text, stage text, client_phone text,
   next_date date,
   status text not null default 'pending' check (status in ('pending','disposed')),
   notes text,
@@ -68,3 +68,20 @@ alter table cases enable row level security;
 alter table fees enable row level security;
 alter table hearing_log enable row level security;
 revoke all on chambers, users, cases, fees, hearing_log from anon, authenticated;
+
+create table if not exists tasks (
+  id uuid primary key default gen_random_uuid(),
+  chamber_id uuid not null references chambers(id) on delete cascade,
+  title text not null,
+  due_date date,
+  priority text not null default 'medium' check (priority in ('low','medium','high')),
+  assigned_to uuid references users(id) on delete set null,
+  created_by uuid references users(id) on delete set null,
+  done boolean not null default false,
+  client_ref uuid,
+  created_at timestamptz not null default now(),
+  unique (chamber_id, client_ref)
+);
+create index if not exists tasks_chamber on tasks(chamber_id, done);
+alter table tasks enable row level security;
+revoke all on tasks from anon, authenticated;

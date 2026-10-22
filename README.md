@@ -34,3 +34,8 @@ Browser mein `/setup.html` kholein (jaise https://aapka-app.onrender.com/setup.h
 - Free Render kuch der idle rehne par sust ho jata hai. Free Supabase 7 din inactive rehne par pause ho jata hai. Paying vakilon ke liye paid plan lein.
 - Backup tab se har hafte Excel/JSON download karwayein.
 - Sab data sirf apne chamber ka dikhta hai: junior ko sirf assigned cases, client ko sirf apne cases.
+
+## Update 1 (v3d): naye features
+Pehle Supabase SQL Editor mein `update-1.sql` ek baar Run karein, phir saari files GitHub par dobara upload karein.
+Naya: WhatsApp reminder, case edit, Excel/CSV import, Kaam (tasks), Calendar, password reset (Team tab), Install App button.
+Software support: 7602292599

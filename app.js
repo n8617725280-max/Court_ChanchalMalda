@@ -51,7 +51,24 @@ const D = {
   popup: ['Popup allow karein', 'Please allow popups', 'পপআপের অনুমতি দিন'], member_ok: ['Member ban gaya', 'Member created', 'সদস্য তৈরি হয়েছে'],
   noserver: ['Server se connect nahi ho paya. Net check karein.', 'Could not reach the server. Check your internet.', 'সার্ভারের সাথে যোগাযোগ হয়নি। নেট চেক করুন।'],
   rc_title: ['Fees Receipt', 'Fees Receipt', 'ফি রসিদ'], rc_date: ['Date', 'Date', 'তারিখ'], rc_no: ['Receipt no', 'Receipt no', 'রসিদ নম্বর'],
-  rc_case: ['Case', 'Case', 'কেস'], rc_party: ['Party', 'Party', 'পক্ষ'], rc_amt: ['Mili rakam', 'Amount received', 'প্রাপ্ত টাকা']
+  rc_case: ['Case', 'Case', 'কেস'], rc_party: ['Party', 'Party', 'পক্ষ'], rc_amt: ['Mili rakam', 'Amount received', 'প্রাপ্ত টাকা'],
+  support: ['Software support', 'Software support', 'সফটওয়্যার সহায়তা'], install: ['App install karein', 'Install app', 'অ্যাপ ইনস্টল করুন'],
+  ph_cphone: ['Client ka mobile (WhatsApp)', 'Client mobile (WhatsApp)', 'ক্লায়েন্টের মোবাইল (WhatsApp)'], edit: ['Badlav', 'Edit', 'এডিট'],
+  wa: ['WhatsApp reminder', 'WhatsApp reminder', 'WhatsApp রিমাইন্ডার'],
+  wa_msg: ['Namaste, aapke case {0} ki agli hearing {1} ko hai. - {2}', 'Hello, the next hearing of your case {0} is on {1}. - {2}', 'নমস্কার, আপনার কেস {0}-এর পরবর্তী শুনানি {1} তারিখে। - {2}'],
+  imp_title: ['Purane cases Excel/CSV se daalein', 'Import old cases from Excel/CSV', 'Excel/CSV থেকে পুরনো কেস আনুন'],
+  imp_help: ['Excel file ko "CSV UTF-8" mein save karein. Pehli line mein heading: Case no, CNR, Party, Court, PS, Stage, Next date, Mobile.', 'Save your Excel file as "CSV UTF-8". First row headings: Case no, CNR, Party, Court, PS, Stage, Next date, Mobile.', 'Excel ফাইলটি "CSV UTF-8" হিসেবে সেভ করুন। প্রথম সারিতে হেডিং দিন: Case no, CNR, Party, Court, PS, Stage, Next date, Mobile।'],
+  imp_sample: ['Sample CSV', 'Sample CSV', 'নমুনা CSV'],
+  imp_done: ['{0} case jude, {1} chhoote (pehle se the ya galat)', '{0} cases added, {1} skipped (already exist or invalid)', '{0}টি কেস যোগ হয়েছে, {1}টি বাদ (আগে থেকেই আছে বা ভুল)'],
+  imp_empty: ['File mein koi case nahi mila', 'No cases found in the file', 'ফাইলে কোনো কেস পাওয়া যায়নি'],
+  resetpw: ['Password badlein', 'Reset password', 'পাসওয়ার্ড বদলান'], newpw: ['Naya password (8+ akshar)', 'New password (8+ characters)', 'নতুন পাসওয়ার্ড (৮+ অক্ষর)'],
+  pw_ok: ['Password badal gaya', 'Password changed', 'পাসওয়ার্ড বদলেছে'],
+  tab_tasks: ['Kaam', 'Tasks', 'কাজ'], tab_cal: ['Calendar', 'Calendar', 'ক্যালেন্ডার'],
+  addtask: ['Naya kaam jodein', 'Add a task', 'নতুন কাজ যোগ করুন'], ph_task: ['Kaam ka naam (jaise Affidavit draft)', 'Task (e.g. Affidavit draft)', 'কাজের নাম (যেমন Affidavit draft)'],
+  duedate: ['Aakhri tareekh', 'Due date', 'শেষ তারিখ'], assign: ['Kise dena hai', 'Assign to', 'কাকে দেবেন'],
+  p_low: ['Kam', 'Low', 'কম'], p_medium: ['Medium', 'Medium', 'মাঝারি'], p_high: ['Zaroori', 'High', 'বেশি'],
+  no_tasks: ['Koi kaam baaki nahi.', 'No pending tasks.', 'কোনো কাজ বাকি নেই।'], done_h: ['Ho gaye', 'Done', 'সম্পন্ন'],
+  cal_none: ['Is din koi hearing nahi.', 'No hearings on this day.', 'এই দিনে কোনো শুনানি নেই।']
 };
 const t = (k, ...a) => D[k][IDX[LANG]].replace(/\{(\d)\}/g, (_, i) => a[i]);
 const E = {   // server ke Hinglish error ka anuvad
@@ -65,6 +82,7 @@ const E = {   // server ke Hinglish error ka anuvad
   'Case no ya CNR zaroori hai': ['Case no or CNR is required', 'কেস নম্বর বা CNR দেওয়া জরুরি'], 'Date galat hai': ['Invalid date', 'তারিখ ভুল'],
   'Junior/Client galat hai': ['Invalid junior/client', 'জুনিয়র/ক্লায়েন্ট ভুল'], 'Ye CNR is chamber mein pehle se hai': ['This CNR already exists in this chamber', 'এই CNR এই চেম্বারে আগে থেকেই আছে'],
   'Case save nahi hua': ['Case could not be saved', 'কেস সেভ হয়নি'], 'Case nahi mila': ['Case not found', 'কেস পাওয়া যায়নি'], 'User galat hai': ['Invalid user', 'ব্যবহারকারী ভুল'],
+  'Password 8+ akshar ka hona chahiye': ['Password must be 8+ characters', 'পাসওয়ার্ড ৮+ অক্ষরের হতে হবে'], 'Kaam ka naam zaroori hai': ['Task name is required', 'কাজের নাম দেওয়া জরুরি'], 'Kaam nahi mila': ['Task not found', 'কাজ পাওয়া যায়নি'],
   'Kuch badla nahi': ['Nothing changed', 'কিছু বদলায়নি'], 'Rakam ya type galat hai': ['Invalid amount or type', 'টাকার পরিমাণ বা ধরন ভুল']
 };
 const se = m => (LANG !== 'hi' && E[m]) ? E[m][IDX[LANG] - 1] : m;
@@ -75,12 +93,12 @@ function applyStatic() {
   document.querySelectorAll('.lang').forEach(s => s.value = LANG);
 }
 
-const S = { user: JSON.parse(localStorage.getItem('u') || 'null'), cases: [], fees: [], users: [], tab: 'today', q: '', pending: 0 };
+const S = { user: JSON.parse(localStorage.getItem('u') || 'null'), cases: [], fees: [], users: [], tasks: [], cal: null, tab: 'today', q: '', pending: 0 };
 let TODAY = iso(new Date()), B = {};
 const TABS = {
-  senior: [['today', 'tab_today'], ['cases', 'tab_cases'], ['fees', 'tab_fees'], ['team', 'tab_team'], ['backup', 'tab_backup']],
-  munshi: [['today', 'tab_today'], ['cases', 'tab_cases'], ['fees', 'tab_fees']],
-  junior: [['today', 'tab_today'], ['cases', 'tab_cases']],
+  senior: [['today', 'tab_today'], ['cal', 'tab_cal'], ['cases', 'tab_cases'], ['tasks', 'tab_tasks'], ['fees', 'tab_fees'], ['team', 'tab_team'], ['backup', 'tab_backup']],
+  munshi: [['today', 'tab_today'], ['cal', 'tab_cal'], ['cases', 'tab_cases'], ['tasks', 'tab_tasks'], ['fees', 'tab_fees']],
+  junior: [['today', 'tab_today'], ['cal', 'tab_cal'], ['cases', 'tab_cases'], ['tasks', 'tab_tasks']],
   client: [['cases', 'tab_mine']]
 };
 const canAdd = () => ['senior', 'munshi'].includes(S.user.role);
@@ -134,9 +152,10 @@ async function load() {
       S.fees = await api('/fees'); await kv.set('fees', S.fees);
       S.users = await api('/users'); await kv.set('users', S.users);
     }
+    if (S.user.role !== 'client') { S.tasks = await api('/tasks'); await kv.set('tasks', S.tasks); }
   } catch (e) {
     if (e.server) toast(e.message);
-    else { S.cases = (await kv.get('cases')) || []; S.fees = (await kv.get('fees')) || []; S.users = (await kv.get('users')) || []; }
+    else { S.cases = (await kv.get('cases')) || []; S.fees = (await kv.get('fees')) || []; S.users = (await kv.get('users')) || []; S.tasks = (await kv.get('tasks')) || []; }
   }
   render();
 }
@@ -156,6 +175,8 @@ function card(c) {
         ${canDate() && c.status === 'pending' ? `<label>${t('nextdate')}<input type="date" data-nd="${esc(c.id)}" value="${esc(c.next_date || '')}" ${tm ? 'disabled' : ''}></label>` : ''}
         ${c.cnr ? `<button class="ghost" data-a="ec" data-cnr="${esc(c.cnr)}">${t('ecourts')}</button>` : ''}
         ${canAdd() && !tm ? `<button class="ghost" data-a="fee" data-id="${esc(c.id)}">${t('fees')}${b.ch ? ' • ' + t('due', money(b.ch - b.pd)) : ''}</button>` : ''}
+        ${canAdd() && c.client_phone && c.next_date && c.status === 'pending' ? `<button class="ghost" data-a="wa" data-id="${esc(c.id)}">${t('wa')}</button>` : ''}
+        ${canAdd() && !tm ? `<button class="ghost" data-a="edit" data-id="${esc(c.id)}">${t('edit')}</button>` : ''}
         ${S.user.role === 'senior' && c.status === 'pending' && !tm ? `<button class="ghost" data-a="done" data-id="${esc(c.id)}">${t('closed')}</button>` : ''}
       </div></div></article>`;
 }
@@ -175,13 +196,13 @@ function addForm() {
   return `<details class="add"><summary>${t('addcase')}</summary><form data-f="case">
     <input name="case_no" placeholder="${t('ph_caseno')}" maxlength="60"><input name="cnr" placeholder="${t('ph_cnr')}" maxlength="40">
     <input name="party_name" placeholder="${t('ph_party')}" maxlength="160"><input name="court" placeholder="${t('ph_court')}" maxlength="60">
-    <input name="ps_name" placeholder="${t('ph_ps')}" maxlength="80"><input name="stage" placeholder="${t('ph_stage')}" maxlength="80">
+    <input name="ps_name" placeholder="${t('ph_ps')}" maxlength="80"><input name="stage" placeholder="${t('ph_stage')}" maxlength="80"><input name="client_phone" placeholder="${t('ph_cphone')}" maxlength="20" inputmode="tel">
     <label>${t('nextdate')}<input type="date" name="next_date"></label>
     <label>${t('junior')}<select name="assigned_to">${opt(S.users.filter(u => u.role === 'junior' && u.active))}</select></label>
     <label>${t('clogin')}<select name="client_user_id">${opt(S.users.filter(u => u.role === 'client' && u.active))}</select></label>
     <button class="pri">${t('savecase')}</button></form></details>`;
 }
-const vCases = () => (canAdd() ? addForm() : '') + `<input id="q" type="search" placeholder="${t('search')}" value="${esc(S.q)}"><div id="list">${caseCards()}</div>`;
+const vCases = () => (canAdd() ? addForm() + importBox() : '') + `<input id="q" type="search" placeholder="${t('search')}" value="${esc(S.q)}"><div id="list">${caseCards()}</div>`;
 function vFees() {
   const due = Object.values(B).reduce((a, b) => a + Math.max(b.ch - b.pd, 0), 0);
   const nm = id => { const c = S.cases.find(x => x.id === id); return c ? (c.case_no || c.cnr) : ''; };
@@ -196,25 +217,75 @@ const vTeam = () => `<details class="add"><summary>${t('addmember')}</summary><f
   <input name="password" type="password" minlength="8" placeholder="${t('ph_pw')}" autocomplete="new-password" required>
   <button class="pri">${t('mkmember')}</button></form></details>` + S.users.map(u =>
   `<div class="fe"><div><b>${esc(u.name || u.email)}</b><p class="m">${t('r_' + u.role)} • ${esc(u.email)}${u.active ? '' : ' • ' + t('inactive')}</p></div>
-  ${u.id !== S.user.id ? `<button class="ghost" data-a="act" data-id="${esc(u.id)}" data-on="${u.active ? 0 : 1}">${u.active ? t('deact') : t('act')}</button>` : ''}</div>`).join('');
+  ${u.id !== S.user.id ? `<button class="ghost" data-a="pw" data-id="${esc(u.id)}">${t('resetpw')}</button><button class="ghost" data-a="act" data-id="${esc(u.id)}" data-on="${u.active ? 0 : 1}">${u.active ? t('deact') : t('act')}</button>` : ''}</div>`).join('');
 const vBackup = () => `<p>${t('bk_info')}</p>
   <p class="m">${t('bk_last', localStorage.getItem('bk') ? esc(fmt(localStorage.getItem('bk'))) : t('bk_never'))}</p>
   <div class="row"><button class="pri" data-a="csv">${t('bk_csv')}</button><button class="ghost" data-a="json">${t('bk_json')}</button></div>`;
 
+// ---------- import, tasks, calendar ----------
+const importBox = () => `<details class="add"><summary>${t('imp_title')}</summary><p class="m">${t('imp_help')}</p><input type="file" id="imp" accept=".csv,text/csv"><div class="row"><button type="button" class="ghost" data-a="sample">${t('imp_sample')}</button></div></details>`;
+function parseCSV(txt) {
+  txt = txt.replace(/^\ufeff/, ''); const l1 = txt.split('\n', 1)[0];
+  const d = l1.includes('\t') ? '\t' : (l1.split(';').length > l1.split(',').length ? ';' : ',');
+  const rows = []; let r = [], v = '', q = false;
+  for (let i = 0; i < txt.length; i++) {
+    const c = txt[i];
+    if (q) { if (c === '"') { if (txt[i + 1] === '"') { v += '"'; i++; } else q = false; } else v += c; }
+    else if (c === '"') q = true;
+    else if (c === d) { r.push(v); v = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && txt[i + 1] === '\n') i++; r.push(v); v = ''; if (r.some(x => x.trim())) rows.push(r); r = []; }
+    else v += c;
+  }
+  r.push(v); if (r.some(x => x.trim())) rows.push(r); return rows;
+}
+const hk = h => { h = h.toLowerCase(); return /cnr/.test(h) ? 'cnr' : /mobile|phone|whatsapp/.test(h) ? 'client_phone' : /date/.test(h) ? 'next_date' : /\bps\b|thana|police|station/.test(h) ? 'ps_name' : /court/.test(h) ? 'court' : /stage/.test(h) ? 'stage' : /party|name|naam/.test(h) ? 'party_name' : /case/.test(h) ? 'case_no' : null; };
+const toIso = v => { v = (v || '').trim(); if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v; const m = v.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/); return m ? `${m[3].length === 2 ? '20' + m[3] : m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : ''; };
+async function importCSV(file) {
+  const rows = parseCSV(await file.text()); if (rows.length < 2) return toast(t('imp_empty'));
+  const keys = rows[0].map(hk);
+  const data = rows.slice(1).map(r => { const o = {}; keys.forEach((k, i) => { if (k && String(r[i] ?? '').trim()) o[k] = String(r[i]).trim(); }); if (o.next_date) { o.next_date = toIso(o.next_date); if (!o.next_date) delete o.next_date; } return o; }).filter(o => o.case_no || o.cnr);
+  if (!data.length) return toast(t('imp_empty'));
+  let add = 0; for (let i = 0; i < data.length; i += 200) add += (await api('/cases/import', { method: 'POST', body: { rows: data.slice(i, i + 200) } })).added;
+  toast(t('imp_done', add, data.length - add)); await load();
+}
+const taskForm = () => `<details class="add"><summary>${t('addtask')}</summary><form data-f="task">
+  <input name="title" placeholder="${t('ph_task')}" maxlength="160" required>
+  <label>${t('duedate')}<input type="date" name="due_date"></label>
+  <label>${t('assign')}<select name="assigned_to">${S.users.filter(u => u.role !== 'client' && u.active).map(u => `<option value="${esc(u.id)}"${u.id === S.user.id ? ' selected' : ''}>${esc(u.name || u.email)}</option>`).join('')}</select></label>
+  <select name="priority"><option value="medium">${t('p_medium')}</option><option value="high">${t('p_high')}</option><option value="low">${t('p_low')}</option></select>
+  <button class="pri">${t('save')}</button></form></details>`;
+const taskRow = x => `<div class="fe task${x.done ? ' dn' : ''}"><button class="ck" data-a="tk" data-id="${esc(x.id)}" data-on="${x.done ? 0 : 1}" aria-label="done">${x.done ? '✓' : ''}</button>
+  <div><b>${esc(x.title)}</b><p class="m">${esc(x.assignee || '')} • ${t('p_' + x.priority)}${x.due_date ? ' • ' + esc(fmt(x.due_date)) : ''}</p></div></div>`;
+function vTasks() {
+  const open = S.tasks.filter(x => !x.done), dn = S.tasks.filter(x => x.done);
+  return (canAdd() ? taskForm() : '') + (open.map(taskRow).join('') || `<p class="empty">${t('no_tasks')}</p>`)
+    + (dn.length ? `<h2>${t('done_h')} <small>${dn.length}</small></h2>` + dn.slice(0, 20).map(taskRow).join('') : '');
+}
+function vCal() {
+  const { y, m, sel } = S.cal, pre = `${y}-${String(m + 1).padStart(2, '0')}-`, n = new Date(y, m + 1, 0).getDate(), cnt = {};
+  S.cases.forEach(c => { if (c.status === 'pending' && c.next_date && c.next_date.startsWith(pre)) cnt[c.next_date] = (cnt[c.next_date] || 0) + 1; });
+  let cells = '<i></i>'.repeat(new Date(y, m, 1).getDay());
+  for (let d = 1; d <= n; d++) { const k = pre + String(d).padStart(2, '0'); cells += `<button class="cd${k === TODAY ? ' td' : ''}${k === sel ? ' sel' : ''}" data-a="day" data-k="${k}">${d}${cnt[k] ? `<small>${cnt[k]}</small>` : ''}</button>`; }
+  const wd = [...Array(7)].map((_, i) => `<b>${new Date(2023, 0, 1 + i).toLocaleDateString(LOC[LANG], { weekday: 'narrow' })}</b>`).join('');
+  const list = S.cases.filter(c => c.status === 'pending' && c.next_date === sel);
+  return `<div class="calh"><button class="ghost" data-a="cm" data-d="-1">‹</button><h2>${new Date(y, m, 1).toLocaleDateString(LOC[LANG], { month: 'long', year: 'numeric' })}</h2><button class="ghost" data-a="cm" data-d="1">›</button></div>
+    <div class="cal">${wd}${cells}</div><h2>${fmt(sel)} <small>${list.length}</small></h2>${list.map(card).join('') || `<p class="empty">${t('cal_none')}</p>`}`;
+}
+
 function render() {
-  TODAY = iso(new Date());
+  TODAY = iso(new Date()); S.cal ??= { y: new Date().getFullYear(), m: new Date().getMonth(), sel: TODAY };
   $('#login').hidden = !!S.user; $('#app').hidden = !S.user;
   if (!S.user) return;
   const tabs = TABS[S.user.role]; if (!tabs.some(x => x[0] === S.tab)) S.tab = tabs[0][0];
   $('#who').textContent = (S.user.chamber ? S.user.chamber + ' • ' : '') + (S.user.name || S.user.email);
   $('#tabs').innerHTML = tabs.map(([k, l]) => `<button data-a="tab" data-k="${k}" class="${k === S.tab ? 'on' : ''}">${t(l)}</button>`).join('');
   buildBal();
-  $('#view').innerHTML = { today: vToday, cases: vCases, fees: vFees, team: vTeam, backup: vBackup }[S.tab](); bar();
+  $('#view').innerHTML = { today: vToday, cal: vCal, cases: vCases, tasks: vTasks, fees: vFees, team: vTeam, backup: vBackup }[S.tab](); bar();
 }
 
 // ---------- backup helpers (CSV ke headings hamesha English, Excel ke liye) ----------
 const csv = rows => '\ufeff' + rows.map(r => r.map(v => { v = v ?? ''; if (typeof v === 'string' && /^[=+\-@]/.test(v)) v = "'" + v; return '"' + String(v).replace(/"/g, '""') + '"'; }).join(',')).join('\r\n');
-const dl = (name, txt, type) => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1e4); localStorage.setItem('bk', TODAY); };
+const dl = (name, txt, type, mark = true) => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1e4); if (mark) localStorage.setItem('bk', TODAY); };
 
 // ---------- actions ----------
 const ACT = {
@@ -251,6 +322,22 @@ const ACT = {
       ...S.cases.map(c => { const b = B[c.id] || { ch: 0, pd: 0 }; return [c.case_no, c.cnr, c.party_name, c.court, c.ps_name, c.stage, c.next_date, c.status, b.ch, b.pd, b.ch - b.pd]; })]), 'text/csv');
     setTimeout(() => dl('fees.csv', csv([['Date', 'Case', 'Type', 'Amount', 'Note'], ...S.fees.map(f => { const c = S.cases.find(x => x.id === f.case_id) || {}; return [f.created_at.slice(0, 10), c.case_no || c.cnr, f.kind === 'payment' ? 'Received' : 'Charged', f.amount, f.note]; })]), 'text/csv'), 600);
   },
+  wa: ({ id }) => {
+    const c = S.cases.find(x => x.id === id); let p = (c.client_phone || '').replace(/\D/g, ''); if (p.length === 10) p = '91' + p;
+    window.open('https://wa.me/' + p + '?text=' + encodeURIComponent(t('wa_msg', c.case_no || c.cnr, fmt(c.next_date), S.user.chamber || '')), '_blank', 'noopener');
+  },
+  edit: ({ id }) => {
+    const c = S.cases.find(x => x.id === id), f = (n, p, m) => `<input name="${n}" placeholder="${p}" value="${esc(c[n])}" maxlength="${m}">`;
+    $('#dlg').innerHTML = `<form data-f="edit" data-id="${esc(id)}"><h3>${esc(c.case_no || c.cnr)}</h3>${f('case_no', t('ph_caseno'), 60)}${f('party_name', t('ph_party'), 160)}${f('court', t('ph_court'), 60)}${f('ps_name', t('ph_ps'), 80)}${f('stage', t('ph_stage'), 80)}${f('client_phone', t('ph_cphone'), 20)}${f('notes', t('note'), 1000)}
+      <div class="row"><button class="pri">${t('save')}</button><button type="button" class="ghost" data-a="x">${t('close')}</button></div></form>`;
+    $('#dlg').showModal();
+  },
+  pw: async ({ id }) => { const p = prompt(t('newpw')); if (!p) return; await api('/users/' + id, { method: 'PATCH', body: { password: p } }); toast(t('pw_ok')); },
+  sample: () => dl('sample.csv', csv([['Case no', 'CNR', 'Party', 'Court', 'PS', 'Stage', 'Next date', 'Mobile'], ['GR 123/24', 'WBMD010012342024', 'Md. Rahim vs State', 'ACJM Malda', 'Chanchal', 'Evidence', '2026-11-15', '9876543210']]), 'text/csv', false),
+  tk: async ({ id, on }) => { if (tmp(id)) return; await send('PATCH', '/tasks/' + id, { done: on === '1' }); S.tasks.find(x => x.id === id).done = on === '1'; await kv.set('tasks', S.tasks); render(); },
+  day: ({ k }) => { S.cal.sel = k; render(); },
+  cm: ({ d }) => { let m = S.cal.m + +d, y = S.cal.y; if (m < 0) { m = 11; y--; } if (m > 11) { m = 0; y++; } S.cal.m = m; S.cal.y = y; render(); },
+  inst: async () => { if (!DIP) return; DIP.prompt(); await DIP.userChoice; DIP = null; $('#inst').hidden = true; },
   json: async () => dl('backup-' + TODAY + '.json', JSON.stringify(await api('/backup'), null, 1), 'application/json')
 };
 const FORM = {
@@ -273,9 +360,19 @@ const FORM = {
     if (r && !r.id) await load(); else S.fees.unshift(r || { ...b, id: 'tmp-' + b.client_ref, created_at: new Date().toISOString() });
     await kv.set('fees', S.fees); render();
   },
+  edit: async f => {
+    const b = Object.fromEntries(new FormData(f)), c = S.cases.find(x => x.id === f.dataset.id);
+    await send('PATCH', '/cases/' + c.id, b); Object.assign(c, b); await kv.set('cases', S.cases); $('#dlg').close(); render();
+  },
+  task: async f => {
+    const b = Object.fromEntries(new FormData(f)); if (!b.due_date) delete b.due_date; b.client_ref = uid();
+    const r = await send('POST', '/tasks', b), me = S.users.find(u => u.id === b.assigned_to);
+    if (r && !r.id) await load(); else S.tasks.unshift(r || { ...b, id: 'tmp-' + b.client_ref, done: false, assignee: me ? (me.name || me.email) : '' });
+    await kv.set('tasks', S.tasks); render();
+  },
   user: async f => { await api('/users', { method: 'POST', body: Object.fromEntries(new FormData(f)) }); S.users = await api('/users'); toast(t('member_ok')); render(); }
 };
-function logout() { localStorage.removeItem('t'); localStorage.removeItem('u'); S.user = null; S.cases = []; S.fees = []; S.users = []; kv.clear(); render(); }
+function logout() { localStorage.removeItem('t'); localStorage.removeItem('u'); S.user = null; S.cases = []; S.fees = []; S.users = []; S.tasks = []; kv.clear(); render(); }
 
 document.addEventListener('click', async e => { const b = e.target.closest('[data-a]'); if (b) try { await ACT[b.dataset.a](b.dataset); } catch (x) { toast(x.message); } });
 document.addEventListener('submit', async e => { e.preventDefault(); const f = e.target; try { await FORM[f.dataset.f](f); } catch (x) { toast(x.message); } });
@@ -286,6 +383,7 @@ document.addEventListener('change', async e => {
     LANG = el.value; localStorage.setItem('lang', LANG); if ($('#dlg').open) $('#dlg').close();
     applyStatic(); $('#err').textContent = ''; render(); return;
   }
+  if (el.id === 'imp') { const fl = el.files[0]; el.value = ''; if (fl) try { await importCSV(fl); } catch (x) { toast(x.server ? x.message : t('noserver')); } return; }
   const id = el.dataset.nd; if (!id || !el.value) return;
   try {
     await send('PATCH', `/cases/${id}/next-date`, { next_date: el.value });
@@ -293,6 +391,7 @@ document.addEventListener('change', async e => {
   } catch (x) { toast(x.message); }
 });
 addEventListener('online', () => { bar(); flush(); }); addEventListener('offline', bar);
+let DIP; addEventListener('beforeinstallprompt', e => { e.preventDefault(); DIP = e; const b = $('#inst'); if (b) b.hidden = false; });
 setInterval(flush, 30000);
 
 async function start() { applyStatic(); render(); if (!S.user) return; await count(); await flush(); await load(); }

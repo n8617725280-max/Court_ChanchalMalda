@@ -1,4 +1,4 @@
-const C = 'mcc-v3';
+const C = 'mcc-v4';
 self.addEventListener('install', e => e.waitUntil(caches.open(C).then(c => c.addAll(['/', '/app.js', '/app.css']))));
 self.addEventListener('fetch', e => {
   const u = new URL(e.request.url);

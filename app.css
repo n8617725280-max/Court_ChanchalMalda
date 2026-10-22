@@ -34,7 +34,7 @@ summary{font-weight:600;cursor:pointer}
 details form{display:grid;gap:6px;margin-top:10px}
 .sum{background:var(--ink);color:#fff;border-radius:10px;padding:16px;margin-bottom:14px}
 .sum b{display:block;font:700 30px Georgia,serif}
-.fe{display:flex;justify-content:space-between;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:8px}
+.fe{flex-wrap:wrap;display:flex;justify-content:space-between;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:8px}
 .fe p{margin:0}
 .empty{color:var(--mut);padding:24px 0;text-align:center}
 .lg{max-width:380px;margin:12vh auto 0;padding:24px;background:#fff;border:1px solid var(--line);border-radius:14px}
@@ -50,3 +50,17 @@ dialog h3{margin-bottom:4px}
 header .lang{background:#fff1;color:#fff;border-color:#fff5}
 header .lang option{color:#000}
 .lg .lang{float:right}
+.ft{text-align:center;color:var(--mut);font-size:13px;padding:18px 12px}
+.ft a{color:var(--ink);font-weight:600}
+.task>div{flex:1}
+.task.dn{opacity:.6}
+.ck{flex:none;width:30px;min-height:30px;padding:0;border:2px solid var(--line);border-radius:50%;background:#fff;color:var(--ink)}
+.calh{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.calh h2{margin:0}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;margin-top:12px}
+.cal b{font-size:12px;color:var(--mut)}
+.cd{padding:8px 0;background:#fff;border:1px solid var(--line);border-radius:8px;min-height:46px}
+.cd small{display:block;font-size:11px;color:var(--red);font-weight:700}
+.cd.td{border-color:var(--ink);font-weight:700}
+.cd.sel{background:var(--ink);color:#fff}
+.cd.sel small{color:#fff}

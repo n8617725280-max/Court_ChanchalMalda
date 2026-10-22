@@ -15,9 +15,9 @@ const DUMMY = bcrypt.hashSync('dummy-password', 10);
 const app = express();
 app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: { useDefaults: true, directives: { 'upgrade-insecure-requests': null } } }));
-app.use(express.json({ limit: '100kb' }));
+app.use(express.json({ limit: '1mb' }));
 // Saari files ek hi folder mein hain. Sirf ye allowed files bahar dikhengi (server.js, package.json wagairah nahi).
-const PAGES = ['index.html', 'app.js', 'app.css', 'sw.js', 'setup.html', 'setup.js'];
+const PAGES = ['index.html', 'app.js', 'app.css', 'sw.js', 'setup.html', 'setup.js', 'manifest.json', 'icon-192.png', 'icon-512.png'];
 app.get('/', (q, s) => s.sendFile('index.html', { root: __dirname }));
 PAGES.forEach(f => app.get('/' + f, (q, s) => s.sendFile(f, { root: __dirname })));
 
@@ -26,6 +26,7 @@ const wrap = f => (q, s, n) => Promise.resolve(f(q, s, n)).catch(e => { console.
 const str = (v, m = 200) => typeof v === 'string' ? v.trim().slice(0, m) : '';
 const isDate = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNaN(Date.parse(v));
 const isId = v => typeof v === 'string' && /^[0-9a-f-]{36}$/i.test(v);
+const phone = v => str(v, 20).replace(/[^\d+]/g, '');
 const pwOk = p => typeof p === 'string' && p.length >= 8 && p.length <= 100;
 const same = (a, b) => { const x = Buffer.from(String(a || '')), y = Buffer.from(String(b)); return x.length === y.length && crypto.timingSafeEqual(x, y); };
 const ok = r => { if (r.error) throw r.error; return r; };
@@ -41,7 +42,7 @@ const auth = wrap(async (q, s, n) => {
 const need = (...r) => (q, s, n) => r.includes(q.user.role) ? n() : s.status(403).json({ error: 'Is kaam ki ijazat nahi hai' });
 
 async function inChamber(id, ch, role) {
-  const { data } = await db.from('users').select('id').eq('id', id).eq('chamber_id', ch).eq('role', role).eq('active', true).maybeSingle();
+  const { data } = await db.from('users').select('id').eq('id', id).eq('chamber_id', ch).in('role', [].concat(role)).eq('active', true).maybeSingle();
   return !!data;
 }
 async function getCase(q, id) {          // case isi chamber ka ho; junior ko sirf apna assigned
@@ -92,12 +93,16 @@ app.post('/api/users', auth, need('senior'), wrap(async (q, s) => {
 }));
 app.patch('/api/users/:id', auth, need('senior'), wrap(async (q, s) => {
   if (!isId(q.params.id) || q.params.id === q.user.id) return s.status(400).json({ error: 'Galat request' });
-  const { data } = ok(await db.from('users').update({ active: !!q.body.active }).eq('id', q.params.id).eq('chamber_id', q.user.chamber_id).select('id').maybeSingle());
+  const upd = {};
+  if ('active' in q.body) upd.active = !!q.body.active;
+  if (q.body.password !== undefined) { if (!pwOk(q.body.password)) return s.status(400).json({ error: 'Password 8+ akshar ka hona chahiye' }); upd.password_hash = await bcrypt.hash(q.body.password, 10); }
+  if (!Object.keys(upd).length) return s.status(400).json({ error: 'Kuch badla nahi' });
+  const { data } = ok(await db.from('users').update(upd).eq('id', q.params.id).eq('chamber_id', q.user.chamber_id).select('id').maybeSingle());
   data ? s.json({ ok: 1 }) : s.status(404).json({ error: 'User nahi mila' });
 }));
 
 // ---------- cases ----------
-const CF = 'id,cnr,case_no,party_name,court,ps_name,stage,next_date,status,notes,assigned_to,client_user_id,created_at';
+const CF = 'id,cnr,case_no,party_name,court,ps_name,stage,next_date,status,notes,assigned_to,client_user_id,client_phone,created_at';
 app.get('/api/cases', auth, wrap(async (q, s) => {
   const u = q.user;
   const rows = await all(() => {
@@ -106,13 +111,13 @@ app.get('/api/cases', auth, wrap(async (q, s) => {
     if (u.role === 'client') x = x.eq('client_user_id', u.id);
     return x;
   });
-  if (u.role === 'client') rows.forEach(c => { delete c.notes; delete c.assigned_to; delete c.client_user_id; });
+  if (u.role === 'client') rows.forEach(c => { delete c.notes; delete c.assigned_to; delete c.client_user_id; delete c.client_phone; });
   s.json(rows);
 }));
 app.post('/api/cases', auth, need('senior', 'munshi'), wrap(async (q, s) => {
   const b = q.body, ch = q.user.chamber_id;
   const row = { chamber_id: ch, created_by: q.user.id, cnr: str(b.cnr, 40).toUpperCase() || null, case_no: str(b.case_no, 60), party_name: str(b.party_name, 160),
-    court: str(b.court, 60), ps_name: str(b.ps_name, 80), stage: str(b.stage, 80), notes: str(b.notes, 1000), client_ref: isId(b.client_ref) ? b.client_ref : null };
+    court: str(b.court, 60), ps_name: str(b.ps_name, 80), stage: str(b.stage, 80), notes: str(b.notes, 1000), client_phone: phone(b.client_phone), client_ref: isId(b.client_ref) ? b.client_ref : null };
   if (!row.case_no && !row.cnr) return s.status(400).json({ error: 'Case no ya CNR zaroori hai' });
   if (b.next_date) { if (!isDate(b.next_date)) return s.status(400).json({ error: 'Date galat hai' }); row.next_date = b.next_date; }
   for (const [k, role] of [['assigned_to', 'junior'], ['client_user_id', 'client']])
@@ -120,6 +125,19 @@ app.post('/api/cases', auth, need('senior', 'munshi'), wrap(async (q, s) => {
   const { data, error } = await db.from('cases').upsert(row, { onConflict: 'chamber_id,client_ref', ignoreDuplicates: true }).select(CF).maybeSingle();
   if (error) return s.status(error.code === '23505' ? 409 : 500).json({ error: error.code === '23505' ? 'Ye CNR is chamber mein pehle se hai' : 'Case save nahi hua' });
   s.json(data || { ok: 1, dup: true });
+}));
+app.post('/api/cases/import', auth, need('senior', 'munshi'), wrap(async (q, s) => {
+  const rows = Array.isArray(q.body.rows) ? q.body.rows.slice(0, 200) : [], ch = q.user.chamber_id, seen = new Set(), out = [];
+  for (const b of rows) {
+    const cnr = str(b.cnr, 40).toUpperCase() || null, case_no = str(b.case_no, 60);
+    if (!cnr && !case_no) continue;
+    if (cnr) { if (seen.has(cnr)) continue; seen.add(cnr); }
+    out.push({ chamber_id: ch, created_by: q.user.id, cnr, case_no, party_name: str(b.party_name, 160), court: str(b.court, 60), ps_name: str(b.ps_name, 80),
+      stage: str(b.stage, 80), client_phone: phone(b.client_phone), next_date: isDate(b.next_date) ? b.next_date : null });
+  }
+  let added = 0;
+  if (out.length) { const { data, error } = await db.from('cases').upsert(out, { onConflict: 'chamber_id,cnr', ignoreDuplicates: true }).select('id'); if (error) throw error; added = data.length; }
+  s.json({ added, total: rows.length });
 }));
 app.patch('/api/cases/:id/next-date', auth, need('senior', 'munshi', 'junior'), wrap(async (q, s) => {
   const c = await getCase(q, q.params.id); if (!c) return s.status(404).json({ error: 'Case nahi mila' });
@@ -129,17 +147,49 @@ app.patch('/api/cases/:id/next-date', auth, need('senior', 'munshi', 'junior'), 
   ok(await db.from('hearing_log').insert({ chamber_id: c.chamber_id, case_id: c.id, old_date: c.next_date, new_date: q.body.next_date, changed_by: q.user.id }));
   s.json({ ok: 1 });
 }));
-app.patch('/api/cases/:id', auth, need('senior'), wrap(async (q, s) => {
+app.patch('/api/cases/:id', auth, need('senior', 'munshi'), wrap(async (q, s) => {
   const c = await getCase(q, q.params.id); if (!c) return s.status(404).json({ error: 'Case nahi mila' });
   const b = q.body, u = {};
   for (const [k, m] of [['case_no', 60], ['party_name', 160], ['court', 60], ['ps_name', 80], ['stage', 80], ['notes', 1000]]) if (typeof b[k] === 'string') u[k] = str(b[k], m);
-  if (['pending', 'disposed'].includes(b.status)) u.status = b.status;
-  for (const [k, role] of [['assigned_to', 'junior'], ['client_user_id', 'client']]) {
+  if (typeof b.client_phone === 'string') u.client_phone = phone(b.client_phone);
+  if (q.user.role === 'senior' && ['pending', 'disposed'].includes(b.status)) u.status = b.status;
+  for (const [k, role] of (q.user.role === 'senior' ? [['assigned_to', 'junior'], ['client_user_id', 'client']] : [])) {
     if (b[k] === null) u[k] = null;
     else if (b[k]) { if (!isId(b[k]) || !(await inChamber(b[k], c.chamber_id, role))) return s.status(400).json({ error: 'User galat hai' }); u[k] = b[k]; }
   }
   if (!Object.keys(u).length) return s.status(400).json({ error: 'Kuch badla nahi' });
   ok(await db.from('cases').update(u).eq('id', c.id).eq('chamber_id', c.chamber_id));
+  s.json({ ok: 1 });
+}));
+
+// ---------- tasks (kaam) ----------
+const TK = 'id,title,due_date,priority,assigned_to,created_by,done,created_at';
+async function names(ch) { const { data } = await db.from('users').select('id,name,email').eq('chamber_id', ch); return Object.fromEntries((data || []).map(u => [u.id, u.name || u.email])); }
+app.get('/api/tasks', auth, need('senior', 'munshi', 'junior'), wrap(async (q, s) => {
+  const u = q.user;
+  const rows = await all(() => {
+    let x = db.from('tasks').select(TK).eq('chamber_id', u.chamber_id).order('created_at', { ascending: false }).order('id');
+    if (u.role !== 'senior') x = x.or(`assigned_to.eq.${u.id},created_by.eq.${u.id}`);
+    return x;
+  });
+  const nm = await names(u.chamber_id);
+  s.json(rows.map(r => ({ ...r, assignee: nm[r.assigned_to] || '' })));
+}));
+app.post('/api/tasks', auth, need('senior', 'munshi'), wrap(async (q, s) => {
+  const b = q.body, ch = q.user.chamber_id, title = str(b.title, 160), to = b.assigned_to || q.user.id;
+  if (!title) return s.status(400).json({ error: 'Kaam ka naam zaroori hai' });
+  if (!isId(to) || !(await inChamber(to, ch, ['senior', 'junior', 'munshi']))) return s.status(400).json({ error: 'User galat hai' });
+  const row = { chamber_id: ch, title, priority: ['low', 'medium', 'high'].includes(b.priority) ? b.priority : 'medium', assigned_to: to, created_by: q.user.id, client_ref: isId(b.client_ref) ? b.client_ref : null };
+  if (b.due_date) { if (!isDate(b.due_date)) return s.status(400).json({ error: 'Date galat hai' }); row.due_date = b.due_date; }
+  const { data, error } = await db.from('tasks').upsert(row, { onConflict: 'chamber_id,client_ref', ignoreDuplicates: true }).select(TK).maybeSingle();
+  if (error) throw error;
+  s.json(data ? { ...data, assignee: (await names(ch))[data.assigned_to] || '' } : { ok: 1, dup: true });
+}));
+app.patch('/api/tasks/:id', auth, need('senior', 'munshi', 'junior'), wrap(async (q, s) => {
+  if (!isId(q.params.id)) return s.status(400).json({ error: 'Galat request' });
+  const { data: k } = await db.from('tasks').select('id,assigned_to,created_by').eq('id', q.params.id).eq('chamber_id', q.user.chamber_id).maybeSingle();
+  if (!k || (q.user.role !== 'senior' && k.assigned_to !== q.user.id && k.created_by !== q.user.id)) return s.status(404).json({ error: 'Kaam nahi mila' });
+  ok(await db.from('tasks').update({ done: !!q.body.done }).eq('id', k.id));
   s.json({ ok: 1 });
 }));
 
