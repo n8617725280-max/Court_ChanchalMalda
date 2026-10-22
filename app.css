@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 :root{--ink:#14181F;--paper:#F4F5F7;--line:#D8DCE2;--red:#8C2F39;--mut:#5B6472}
 *{box-sizing:border-box}
 body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Nirmala UI","Noto Sans Bengali",sans-serif;padding-bottom:env(safe-area-inset-bottom)}
@@ -64,3 +65,26 @@ header .lang option{color:#000}
 .cd.td{border-color:var(--ink);font-weight:700}
 .cd.sel{background:var(--ink);color:#fff}
 .cd.sel small{color:#fff}
+
+/* ---- Nyaya Connect look: navy + saffron, cream paper ---- */
+:root{--ink:#101e38;--paper:#fffbf7;--line:#e9ddd5;--red:#c73e2c;--mut:#6b7280;--sf:#ff7a1a;--sf-l:#fff0e6}
+body{font-family:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,"Nirmala UI","Noto Sans Bengali",sans-serif}
+h1,h2,h3{font-family:"Instrument Serif",Georgia,"Times New Roman","Nirmala UI","Noto Sans Bengali",serif;font-weight:400}
+h2{font-size:22px}
+.bd h3{font-size:20px}
+.pri{background:var(--sf);color:var(--ink);font-weight:700}
+button.pri,button.ghost{border-radius:999px}
+nav button.on{border-bottom-color:var(--sf);color:var(--ink)}
+:focus-visible{outline-color:var(--ink)}
+.case,.fe,details.add,.lg{border-radius:14px}
+.case,.fe,details.add{box-shadow:0 1px 2px #1018280d}
+.dt{background:var(--ink)}
+.dt.late{background:var(--red)}
+.dt b{font-family:"Instrument Serif",Georgia,serif;font-weight:400;font-size:32px}
+.sum{background:var(--ink);border-radius:14px}
+.sum b{font-family:"Instrument Serif",Georgia,serif;font-weight:400;font-size:36px}
+.cd.td{border-color:var(--sf);background:var(--sf-l)}
+.cd small{color:var(--red)}
+.ck:hover{border-color:var(--sf)}
+header{box-shadow:0 2px 8px #10182833}
+.lg h1{font-size:30px}
