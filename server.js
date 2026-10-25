@@ -1,3 +1,4 @@
+// Malda Court Connect v5 — server
 require('dotenv').config();
 const express = require('express'), path = require('path'), crypto = require('crypto');
 const bcrypt = require('bcryptjs'), jwt = require('jsonwebtoken');
@@ -17,7 +18,7 @@ app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: { useDefaults: true, directives: { 'upgrade-insecure-requests': null } } }));
 app.use(express.json({ limit: '1mb' }));
 // Saari files ek hi folder mein hain. Sirf ye allowed files bahar dikhengi (server.js, package.json wagairah nahi).
-const PAGES = ['index.html', 'app.js', 'app.css', 'sw.js', 'setup.html', 'setup.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'owner.html', 'owner.js'];
+const PAGES = ['index.html', 'app.js', 'app.css', 'sw.js', 'setup.html', 'setup.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'owner.html', 'owner.js', 'qr.js', 'law-sections.json'];
 app.get('/', (q, s) => s.sendFile('index.html', { root: __dirname }));
 PAGES.forEach(f => app.get('/' + f, (q, s) => s.sendFile(f, { root: __dirname })));
 
@@ -47,11 +48,18 @@ async function inChamber(id, ch, role) {
   const { data } = await db.from('users').select('id').eq('id', id).eq('chamber_id', ch).in('role', [].concat(role)).eq('active', true).maybeSingle();
   return !!data;
 }
-async function getCase(q, id) {          // case isi chamber ka ho; junior ko sirf apna assigned
+async function getCase(q, id, extra = '') {   // case isi chamber ka ho; junior ko sirf assigned, client ko sirf apna
   if (!isId(id)) return null;
-  const { data } = await db.from('cases').select('id,chamber_id,assigned_to,next_date').eq('id', id).eq('chamber_id', q.user.chamber_id).maybeSingle();
-  if (!data || (q.user.role === 'junior' && data.assigned_to !== q.user.id)) return null;
+  const { data } = await db.from('cases').select('id,chamber_id,assigned_to,client_user_id,next_date' + extra).eq('id', id).eq('chamber_id', q.user.chamber_id).maybeSingle();
+  if (!data) return null;
+  if (q.user.role === 'junior' && data.assigned_to !== q.user.id) return null;
+  if (q.user.role === 'client' && data.client_user_id !== q.user.id) return null;
   return data;
+}
+async function clientInChamber(id, ch) {
+  if (!isId(id)) return false;
+  const { data } = await db.from('clients').select('id').eq('id', id).eq('chamber_id', ch).maybeSingle();
+  return !!data;
 }
 async function mkUser(chamber_id, b, role) {
   const email = str(b.email, 120).toLowerCase();
@@ -171,7 +179,26 @@ app.patch('/api/users/:id', auth, need('senior'), wrap(async (q, s) => {
 }));
 
 // ---------- cases ----------
-const CF = 'id,cnr,case_no,party_name,court,ps_name,stage,next_date,status,notes,assigned_to,client_user_id,client_phone,created_at';
+const CF = 'id,cnr,case_no,party_name,court,ps_name,stage,next_date,status,notes,assigned_to,client_user_id,client_phone,created_at,'
+  + 'client_id,case_type,fir_no,fir_date,sections,bail_status,chargesheet_date,ip_name,io_name';
+const CASE_TYPES = ['civil', 'criminal', 'other'];
+// naye (v5) case fields: text + date. Galat date par error string lautata hai
+function caseExtra(b, row) {
+  for (const [k, m] of [['fir_no', 60], ['sections', 500], ['bail_status', 80], ['ip_name', 160], ['io_name', 160]]) if (typeof b[k] === 'string') row[k] = str(b[k], m) || null;
+  for (const k of ['fir_date', 'chargesheet_date']) {
+    if (b[k] === null || b[k] === '') row[k] = null;
+    else if (b[k] !== undefined) { if (!isDate(b[k])) return 'Date galat hai'; row[k] = b[k]; }
+  }
+  if (b.case_type === null || b.case_type === '') row.case_type = null;
+  else if (b.case_type !== undefined) { if (!CASE_TYPES.includes(b.case_type)) return 'Case type galat hai'; row.case_type = b.case_type; }
+  return null;
+}
+async function newClient(ch, uid, b) {      // case ke saath naya client (auto-create)
+  const name = str(b.client_name, 120); if (!name) return null;
+  const { data, error } = await db.from('clients').insert({ chamber_id: ch, created_by: uid, name, phone: phone(b.client_phone) || null }).select('id').single();
+  if (error) throw error;
+  return data.id;
+}
 app.get('/api/cases', auth, wrap(async (q, s) => {
   const u = q.user;
   const rows = await all(() => {
@@ -180,7 +207,7 @@ app.get('/api/cases', auth, wrap(async (q, s) => {
     if (u.role === 'client') x = x.eq('client_user_id', u.id);
     return x;
   });
-  if (u.role === 'client') rows.forEach(c => { delete c.notes; delete c.assigned_to; delete c.client_user_id; delete c.client_phone; });
+  if (u.role === 'client') rows.forEach(c => { delete c.notes; delete c.assigned_to; delete c.client_user_id; delete c.client_phone; delete c.client_id; });
   s.json(rows);
 }));
 app.post('/api/cases', auth, need('senior', 'munshi'), wrap(async (q, s) => {
@@ -189,8 +216,13 @@ app.post('/api/cases', auth, need('senior', 'munshi'), wrap(async (q, s) => {
     court: str(b.court, 60), ps_name: str(b.ps_name, 80), stage: str(b.stage, 80), notes: str(b.notes, 1000), client_phone: phone(b.client_phone), client_ref: isId(b.client_ref) ? b.client_ref : null };
   if (!row.case_no && !row.cnr) return s.status(400).json({ error: 'Case no ya CNR zaroori hai' });
   if (b.next_date) { if (!isDate(b.next_date)) return s.status(400).json({ error: 'Date galat hai' }); row.next_date = b.next_date; }
+  const bad = caseExtra(b, row); if (bad) return s.status(400).json({ error: bad });
   for (const [k, role] of [['assigned_to', 'junior'], ['client_user_id', 'client']])
     if (b[k]) { if (!isId(b[k]) || !(await inChamber(b[k], ch, role))) return s.status(400).json({ error: 'Junior/Client galat hai' }); row[k] = b[k]; }
+  if (b.client_id) { if (!(await clientInChamber(b.client_id, ch))) return s.status(400).json({ error: 'Client nahi mila' }); row.client_id = b.client_id; }
+  // offline retry: pehle check karein ki ye client_ref pehle hi save to nahi hua (warna duplicate client banta)
+  if (row.client_ref) { const { data: had } = await db.from('cases').select('id').eq('chamber_id', ch).eq('client_ref', row.client_ref).maybeSingle(); if (had) return s.json({ ok: 1, dup: true }); }
+  if (!row.client_id && b.make_client) row.client_id = await newClient(ch, q.user.id, b);
   const { data, error } = await db.from('cases').upsert(row, { onConflict: 'chamber_id,client_ref', ignoreDuplicates: true }).select(CF).maybeSingle();
   if (error) return s.status(error.code === '23505' ? 409 : 500).json({ error: error.code === '23505' ? 'Ye CNR is chamber mein pehle se hai' : 'Case save nahi hua' });
   s.json(data || { ok: 1, dup: true });
@@ -221,6 +253,9 @@ app.patch('/api/cases/:id', auth, need('senior', 'munshi'), wrap(async (q, s) =>
   const b = q.body, u = {};
   for (const [k, m] of [['case_no', 60], ['party_name', 160], ['court', 60], ['ps_name', 80], ['stage', 80], ['notes', 1000]]) if (typeof b[k] === 'string') u[k] = str(b[k], m);
   if (typeof b.client_phone === 'string') u.client_phone = phone(b.client_phone);
+  const bad = caseExtra(b, u); if (bad) return s.status(400).json({ error: bad });
+  if (b.client_id === null || b.client_id === '') u.client_id = null;
+  else if (b.client_id) { if (!(await clientInChamber(b.client_id, c.chamber_id))) return s.status(400).json({ error: 'Client nahi mila' }); u.client_id = b.client_id; }
   if (q.user.role === 'senior' && ['pending', 'disposed'].includes(b.status)) u.status = b.status;
   for (const [k, role] of (q.user.role === 'senior' ? [['assigned_to', 'junior'], ['client_user_id', 'client']] : [])) {
     if (b[k] === null) u[k] = null;
@@ -228,6 +263,221 @@ app.patch('/api/cases/:id', auth, need('senior', 'munshi'), wrap(async (q, s) =>
   }
   if (!Object.keys(u).length) return s.status(400).json({ error: 'Kuch badla nahi' });
   ok(await db.from('cases').update(u).eq('id', c.id).eq('chamber_id', c.chamber_id));
+  s.json({ ok: 1 });
+}));
+// BNS finder se "case mein jodein": section list mein jodta hai (junior bhi apne assigned case mein)
+app.post('/api/cases/:id/sections', auth, need('senior', 'munshi', 'junior'), wrap(async (q, s) => {
+  const c = await getCase(q, q.params.id, ',sections'); if (!c) return s.status(404).json({ error: 'Case nahi mila' });
+  const add = str(q.body.sec, 60); if (!add) return s.status(400).json({ error: 'Galat request' });
+  const list = (c.sections || '').split(',').map(x => x.trim()).filter(Boolean);
+  if (!list.some(x => x.toLowerCase() === add.toLowerCase())) list.push(add);
+  const sections = list.join(', ');
+  if (sections.length > 500) return s.status(400).json({ error: 'Bahut zyada sections' });
+  ok(await db.from('cases').update({ sections }).eq('id', c.id).eq('chamber_id', c.chamber_id));
+  s.json({ ok: 1, sections });
+}));
+
+// ---------- clients (muvakkil) ----------
+const CL = 'id,name,phone,address,guardian,notes,created_at';
+function clientRow(b, row) {
+  for (const [k, m] of [['name', 120], ['address', 300], ['guardian', 120], ['notes', 1000]]) if (typeof b[k] === 'string') row[k] = str(b[k], m);
+  if (typeof b.phone === 'string') row.phone = phone(b.phone);
+  return row;
+}
+app.get('/api/clients', auth, need('senior', 'munshi'), wrap(async (q, s) => {
+  s.json(await all(() => db.from('clients').select(CL).eq('chamber_id', q.user.chamber_id).order('name').order('id')));
+}));
+app.post('/api/clients', auth, need('senior', 'munshi'), wrap(async (q, s) => {
+  const row = clientRow(q.body, { chamber_id: q.user.chamber_id, created_by: q.user.id, client_ref: isId(q.body.client_ref) ? q.body.client_ref : null });
+  if (!row.name) return s.status(400).json({ error: 'Client ka naam zaroori hai' });
+  const { data, error } = await db.from('clients').upsert(row, { onConflict: 'chamber_id,client_ref', ignoreDuplicates: true }).select(CL).maybeSingle();
+  if (error) throw error;
+  s.json(data || { ok: 1, dup: true });
+}));
+app.patch('/api/clients/:id', auth, need('senior', 'munshi'), wrap(async (q, s) => {
+  if (!(await clientInChamber(q.params.id, q.user.chamber_id))) return s.status(404).json({ error: 'Client nahi mila' });
+  const u = clientRow(q.body, {});
+  if ('name' in u && !u.name) return s.status(400).json({ error: 'Client ka naam zaroori hai' });
+  if (!Object.keys(u).length) return s.status(400).json({ error: 'Kuch badla nahi' });
+  ok(await db.from('clients').update(u).eq('id', q.params.id).eq('chamber_id', q.user.chamber_id));
+  s.json({ ok: 1 });
+}));
+
+// ---------- chamber settings (vakil ka naam, UPI) ----------
+const CHF = 'name,adv_name,adv_enrol,address,upi_id,upi_name';
+const UPI_RE = /^[a-zA-Z0-9._-]{2,256}@[a-zA-Z][a-zA-Z0-9]{1,63}$/;
+app.get('/api/chamber', auth, need('senior', 'munshi', 'junior'), wrap(async (q, s) => {
+  s.json(ok(await db.from('chambers').select(CHF).eq('id', q.user.chamber_id).single()).data);
+}));
+app.patch('/api/chamber', auth, need('senior'), wrap(async (q, s) => {
+  const b = q.body, u = {};
+  for (const [k, m] of [['adv_name', 120], ['adv_enrol', 60], ['address', 300], ['upi_name', 80]]) if (typeof b[k] === 'string') u[k] = str(b[k], m) || null;
+  if (typeof b.upi_id === 'string') { const v = str(b.upi_id, 120); if (v && !UPI_RE.test(v)) return s.status(400).json({ error: 'UPI ID galat hai (jaise naam@okhdfcbank)' }); u.upi_id = v || null; }
+  if (!Object.keys(u).length) return s.status(400).json({ error: 'Kuch badla nahi' });
+  ok(await db.from('chambers').update(u).eq('id', q.user.chamber_id));
+  s.json({ ok: 1 });
+}));
+
+// ---------- dashboard ----------
+app.get('/api/dashboard', auth, need('senior', 'munshi', 'junior'), wrap(async (q, s) => {
+  const u = q.user;
+  let recent = ok(await db.from('hearing_log').select('case_id,old_date,new_date,changed_at,changed_by').eq('chamber_id', u.chamber_id)
+    .order('changed_at', { ascending: false }).limit(u.role === 'junior' ? 200 : 15)).data;
+  if (u.role === 'junior') {
+    const mine = new Set((await all(() => db.from('cases').select('id').eq('chamber_id', u.chamber_id).eq('assigned_to', u.id).order('id'))).map(c => c.id));
+    recent = recent.filter(r => mine.has(r.case_id));
+  }
+  const nm = await names(u.chamber_id);
+  const out = { recent: recent.slice(0, 15).map(r => ({ ...r, by: nm[r.changed_by] || '' })) };
+  if (u.role !== 'junior') out.storage_bytes = (await all(() => db.from('documents').select('size').eq('chamber_id', u.chamber_id).order('id'))).reduce((a, d) => a + (+d.size || 0), 0);
+  s.json(out);
+}));
+
+// ---------- document vault (private Supabase Storage bucket) ----------
+const BUCKET = 'case-docs', MAXDOC = 10 * 1024 * 1024;
+const DF = 'id,case_id,name,mime,size,uploaded_by,created_at';
+const sniff = b => {                      // file ka type uske pehle bytes (magic bytes) se, naam/extension par bharosa nahi
+  if (b.length > 4 && b.slice(0, 5).toString('latin1') === '%PDF-') return { mime: 'application/pdf', ext: 'pdf' };
+  if (b.length > 3 && b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF) return { mime: 'image/jpeg', ext: 'jpg' };
+  if (b.length > 8 && b.slice(0, 8).equals(Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]))) return { mime: 'image/png', ext: 'png' };
+  return null;
+};
+async function ensureBucket() {           // bucket na ho to bana do (hamesha private)
+  try {
+    const { data, error } = await db.storage.getBucket(BUCKET);
+    if (error || !data) {
+      const r = await db.storage.createBucket(BUCKET, { public: false, fileSizeLimit: MAXDOC, allowedMimeTypes: ['application/pdf', 'image/jpeg', 'image/png'] });
+      if (r.error) console.error('Storage bucket nahi bana:', r.error.message); else console.log('Storage bucket bana: ' + BUCKET);
+    } else if (data.public) {
+      await db.storage.updateBucket(BUCKET, { public: false, fileSizeLimit: MAXDOC, allowedMimeTypes: ['application/pdf', 'image/jpeg', 'image/png'] });
+      console.log('Storage bucket ko private kiya: ' + BUCKET);
+    }
+  } catch (e) { console.error('Storage check fail:', e.message); }
+}
+const upLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: 40, standardHeaders: true, legacyHeaders: false, message: { error: 'Bahut koshish ho gayi. 15 minute baad try karein' } });
+const dlLimit = rateLimit({ windowMs: 5 * 60 * 1000, max: 120, standardHeaders: true, legacyHeaders: false, message: { error: 'Bahut koshish ho gayi. 15 minute baad try karein' } });
+app.get('/api/cases/:id/docs', auth, wrap(async (q, s) => {
+  const c = await getCase(q, q.params.id); if (!c) return s.status(404).json({ error: 'Case nahi mila' });
+  s.json(ok(await db.from('documents').select(DF).eq('chamber_id', c.chamber_id).eq('case_id', c.id).order('created_at', { ascending: false })).data);
+}));
+// Upload: body = file ke raw bytes (application/octet-stream), naam header x-file-name mein. Sirf isi route par 10 MB limit.
+app.post('/api/cases/:id/docs', auth, need('senior', 'munshi', 'junior'), upLimit, express.raw({ type: 'application/octet-stream', limit: MAXDOC }), wrap(async (q, s) => {
+  const c = await getCase(q, q.params.id); if (!c) return s.status(404).json({ error: 'Case nahi mila' });
+  const buf = q.body;
+  if (!Buffer.isBuffer(buf) || !buf.length) return s.status(400).json({ error: 'File khaali hai' });
+  if (buf.length > MAXDOC) return s.status(413).json({ error: 'File 10 MB se badi hai' });
+  const kind = sniff(buf); if (!kind) return s.status(400).json({ error: 'Sirf PDF, JPG ya PNG file chalegi' });
+  let name = ''; try { name = decodeURIComponent(String(q.headers['x-file-name'] || '')); } catch { name = ''; }
+  name = str(name.replace(/[\\/\u0000-\u001f<>"]/g, '_'), 120) || ('document.' + kind.ext);
+  const path = `${c.chamber_id}/${c.id}/${crypto.randomUUID()}.${kind.ext}`;
+  const up = await db.storage.from(BUCKET).upload(path, buf, { contentType: kind.mime, upsert: false });
+  if (up.error) { console.error(up.error); return s.status(500).json({ error: 'Upload nahi hua, dobara try karein' }); }
+  const { data, error } = await db.from('documents').insert({ chamber_id: c.chamber_id, case_id: c.id, name, mime: kind.mime, size: buf.length, path, uploaded_by: q.user.id }).select(DF).single();
+  if (error) { await db.storage.from(BUCKET).remove([path]); throw error; }
+  s.json(data);
+}));
+// Download: access check ke baad 60 second ka signed URL
+app.get('/api/docs/:id/url', auth, dlLimit, wrap(async (q, s) => {
+  if (!isId(q.params.id)) return s.status(400).json({ error: 'Galat request' });
+  const { data: d } = await db.from('documents').select('id,case_id,name,path').eq('id', q.params.id).eq('chamber_id', q.user.chamber_id).maybeSingle();
+  if (!d || !(await getCase(q, d.case_id))) return s.status(404).json({ error: 'Document nahi mila' });
+  const r = await db.storage.from(BUCKET).createSignedUrl(d.path, 60, { download: d.name });
+  if (r.error) throw r.error;
+  s.json({ url: r.data.signedUrl });
+}));
+app.delete('/api/docs/:id', auth, need('senior'), wrap(async (q, s) => {
+  if (!isId(q.params.id)) return s.status(400).json({ error: 'Galat request' });
+  const { data: d } = await db.from('documents').select('id,path').eq('id', q.params.id).eq('chamber_id', q.user.chamber_id).maybeSingle();
+  if (!d) return s.status(404).json({ error: 'Document nahi mila' });
+  const r = await db.storage.from(BUCKET).remove([d.path]); if (r.error) throw r.error;
+  ok(await db.from('documents').delete().eq('id', d.id).eq('chamber_id', q.user.chamber_id));
+  s.json({ ok: 1 });
+}));
+
+// ---------- drafts (Vakalatnama, affidavit, bail wagairah) ----------
+const DRAFT_KINDS = ['vakalatnama', 'affidavit', 'affidavit_bn', 'notice', 'bail_480', 'bail_482', 'bail_bn', 'adjourn', 'hazira', 'other'];
+const DRF = 'id,case_id,kind,title,body,created_by,created_at,updated_at';
+app.get('/api/cases/:id/drafts', auth, need('senior', 'munshi', 'junior'), wrap(async (q, s) => {
+  const c = await getCase(q, q.params.id); if (!c) return s.status(404).json({ error: 'Case nahi mila' });
+  s.json(ok(await db.from('drafts').select(DRF).eq('chamber_id', c.chamber_id).eq('case_id', c.id).order('updated_at', { ascending: false })).data);
+}));
+app.post('/api/drafts', auth, need('senior', 'munshi', 'junior'), wrap(async (q, s) => {
+  const b = q.body, c = await getCase(q, b.case_id); if (!c) return s.status(404).json({ error: 'Case nahi mila' });
+  const body = typeof b.body === 'string' ? b.body.slice(0, 20000) : '';
+  if (!body.trim()) return s.status(400).json({ error: 'Draft khaali hai' });
+  const row = { chamber_id: c.chamber_id, case_id: c.id, kind: DRAFT_KINDS.includes(b.kind) ? b.kind : 'other', title: str(b.title, 120) || 'Draft', body,
+    created_by: q.user.id, client_ref: isId(b.client_ref) ? b.client_ref : null };
+  const { data, error } = await db.from('drafts').upsert(row, { onConflict: 'chamber_id,client_ref', ignoreDuplicates: true }).select(DRF).maybeSingle();
+  if (error) throw error;
+  s.json(data || { ok: 1, dup: true });
+}));
+app.patch('/api/drafts/:id', auth, need('senior', 'munshi', 'junior'), wrap(async (q, s) => {
+  if (!isId(q.params.id)) return s.status(400).json({ error: 'Galat request' });
+  const { data: d } = await db.from('drafts').select('id,case_id').eq('id', q.params.id).eq('chamber_id', q.user.chamber_id).maybeSingle();
+  if (!d || !(await getCase(q, d.case_id))) return s.status(404).json({ error: 'Draft nahi mila' });
+  const u = { updated_at: new Date().toISOString() };
+  if (typeof q.body.title === 'string') u.title = str(q.body.title, 120) || 'Draft';
+  if (typeof q.body.body === 'string') { if (!q.body.body.trim()) return s.status(400).json({ error: 'Draft khaali hai' }); u.body = q.body.body.slice(0, 20000); }
+  ok(await db.from('drafts').update(u).eq('id', d.id).eq('chamber_id', q.user.chamber_id));
+  s.json({ ok: 1 });
+}));
+app.delete('/api/drafts/:id', auth, need('senior'), wrap(async (q, s) => {
+  if (!isId(q.params.id)) return s.status(400).json({ error: 'Galat request' });
+  const { data } = ok(await db.from('drafts').delete().eq('id', q.params.id).eq('chamber_id', q.user.chamber_id).select('id').maybeSingle());
+  data ? s.json({ ok: 1 }) : s.status(404).json({ error: 'Draft nahi mila' });
+}));
+
+// ---------- chamber notes / knowledge base ----------
+const NF = 'id,title,body,tag,case_id,private,created_by,created_at,updated_at';
+async function noteFor(q, id) {          // note isi chamber ka; private sirf senior; junior sirf apne cases ke
+  if (!isId(id)) return null;
+  const { data: n } = await db.from('notes').select(NF).eq('id', id).eq('chamber_id', q.user.chamber_id).maybeSingle();
+  if (!n || (n.private && q.user.role !== 'senior')) return null;
+  if (n.case_id && q.user.role === 'junior' && !(await getCase(q, n.case_id))) return null;
+  return n;
+}
+app.get('/api/notes', auth, need('senior', 'munshi', 'junior'), wrap(async (q, s) => {
+  const u = q.user;
+  let rows = await all(() => {
+    let x = db.from('notes').select(NF).eq('chamber_id', u.chamber_id).order('updated_at', { ascending: false }).order('id');
+    if (u.role !== 'senior') x = x.eq('private', false);
+    return x;
+  });
+  if (u.role === 'junior') {
+    const mine = new Set((await all(() => db.from('cases').select('id').eq('chamber_id', u.chamber_id).eq('assigned_to', u.id).order('id'))).map(c => c.id));
+    rows = rows.filter(n => !n.case_id || mine.has(n.case_id));
+  }
+  const nm = await names(u.chamber_id);
+  s.json(rows.map(n => ({ ...n, by: nm[n.created_by] || '' })));
+}));
+app.post('/api/notes', auth, need('senior', 'munshi', 'junior'), wrap(async (q, s) => {
+  const b = q.body, u = q.user;
+  const row = { chamber_id: u.chamber_id, title: str(b.title, 160), body: typeof b.body === 'string' ? b.body.trim().slice(0, 5000) : '', tag: str(b.tag, 40).toLowerCase() || null,
+    private: u.role === 'senior' && !!b.private, created_by: u.id, client_ref: isId(b.client_ref) ? b.client_ref : null };
+  if (!row.title && !row.body) return s.status(400).json({ error: 'Note khaali hai' });
+  if (!row.title) row.title = row.body.slice(0, 60);
+  if (b.case_id) { const c = await getCase(q, b.case_id); if (!c) return s.status(404).json({ error: 'Case nahi mila' }); row.case_id = c.id; }
+  const { data, error } = await db.from('notes').upsert(row, { onConflict: 'chamber_id,client_ref', ignoreDuplicates: true }).select(NF).maybeSingle();
+  if (error) throw error;
+  s.json(data ? { ...data, by: u.name || '' } : { ok: 1, dup: true });
+}));
+app.patch('/api/notes/:id', auth, need('senior', 'munshi', 'junior'), wrap(async (q, s) => {
+  const n = await noteFor(q, q.params.id);
+  if (!n || (q.user.role !== 'senior' && n.created_by !== q.user.id)) return s.status(404).json({ error: 'Note nahi mila' });
+  const b = q.body, u = { updated_at: new Date().toISOString() };
+  if (typeof b.title === 'string') u.title = str(b.title, 160);
+  if (typeof b.body === 'string') u.body = b.body.trim().slice(0, 5000);
+  if (typeof b.tag === 'string') u.tag = str(b.tag, 40).toLowerCase() || null;
+  if (q.user.role === 'senior' && 'private' in b) u.private = !!b.private;
+  if (b.case_id === null || b.case_id === '') u.case_id = null;
+  else if (b.case_id) { const c = await getCase(q, b.case_id); if (!c) return s.status(404).json({ error: 'Case nahi mila' }); u.case_id = c.id; }
+  ok(await db.from('notes').update(u).eq('id', n.id).eq('chamber_id', q.user.chamber_id));
+  s.json({ ok: 1 });
+}));
+app.delete('/api/notes/:id', auth, need('senior', 'munshi', 'junior'), wrap(async (q, s) => {
+  const n = await noteFor(q, q.params.id);
+  if (!n || (q.user.role !== 'senior' && n.created_by !== q.user.id)) return s.status(404).json({ error: 'Note nahi mila' });
+  ok(await db.from('notes').delete().eq('id', n.id).eq('chamber_id', q.user.chamber_id));
   s.json({ ok: 1 });
 }));
 
@@ -279,9 +529,21 @@ app.post('/api/fees', auth, need('senior', 'munshi'), wrap(async (q, s) => {
 
 // ---------- backup (sirf senior, sirf apna chamber) ----------
 app.get('/api/backup', auth, need('senior'), wrap(async (q, s) => {
-  const ch = q.user.chamber_id, get = t => all(() => db.from(t).select('*').eq('chamber_id', ch).order('id'));
-  const [cases, fees, hearing_log] = await Promise.all([get('cases'), get('fees'), get('hearing_log')]);
-  s.json({ exported_at: new Date().toISOString(), cases, fees, hearing_log });
+  const ch = q.user.chamber_id, get = (t, f = '*') => all(() => db.from(t).select(f).eq('chamber_id', ch).order('id'));
+  const [cases, fees, hearing_log, clients, tasks, notes, drafts, documents] = await Promise.all([get('cases'), get('fees'), get('hearing_log'), get('clients'), get('tasks'),
+    get('notes'), get('drafts'), get('documents', 'id,case_id,name,mime,size,path,created_at')]);
+  s.json({ exported_at: new Date().toISOString(), version: 5, cases, fees, hearing_log, clients, tasks, notes, drafts, documents });
 }));
 
-app.listen(process.env.PORT || 10000, () => console.log('Malda Court Connect chalu hai'));
+// galat JSON / badi file ka saaf jawab
+app.use((e, q, s, n) => {
+  if (e && e.type === 'entity.too.large') return s.status(413).json({ error: 'File 10 MB se badi hai' });
+  if (e && e.type === 'entity.parse.failed') return s.status(400).json({ error: 'Galat request' });
+  console.error(e); s.status(500).json({ error: 'Server error, dobara try karein' });
+});
+
+if (require.main === module) {
+  ensureBucket();
+  app.listen(process.env.PORT || 10000, () => console.log('Malda Court Connect v5 chalu hai'));
+}
+module.exports = app;

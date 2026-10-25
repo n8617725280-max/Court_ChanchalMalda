@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#14181F">
+<meta name="theme-color" content="#0F2744">
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png">
 <title>Malda Court Connect</title>
@@ -11,8 +11,37 @@
 </head>
 <body>
 <div id="login" hidden>
+ <div class="welcome">
+  <section class="intro">
+    <img src="/icon-192.png" alt="" width="56" height="56">
+    <h1>Malda Court Connect</h1>
+    <p class="lead" data-t="lp_lead"></p>
+    <ul class="feat">
+      <li><b data-t="lp_f1"></b><span data-t="lp_f1d"></span></li>
+      <li><b data-t="lp_f2"></b><span data-t="lp_f2d"></span></li>
+      <li><b data-t="lp_f3"></b><span data-t="lp_f3d"></span></li>
+      <li><b data-t="lp_f4"></b><span data-t="lp_f4d"></span></li>
+      <li><b data-t="lp_f5"></b><span data-t="lp_f5d"></span></li>
+      <li><b data-t="lp_f6"></b><span data-t="lp_f6d"></span></li>
+      <li><b data-t="lp_f7"></b><span data-t="lp_f7d"></span></li>
+      <li><b data-t="lp_f8"></b><span data-t="lp_f8d"></span></li>
+      <li><b data-t="lp_f9"></b><span data-t="lp_f9d"></span></li>
+      <li><b data-t="lp_f10"></b><span data-t="lp_f10d"></span></li>
+      <li><b data-t="lp_f11"></b><span data-t="lp_f11d"></span></li>
+    </ul>
+    <div class="dev">
+      <p class="m" data-t="lp_dev"></p>
+      <b>SK Nuruddin</b>
+      <span data-t="lp_place"></span>
+      <div class="row">
+        <a class="btn pri" href="tel:+917602292599">Call 7602292599</a>
+        <a class="btn ghost" href="https://wa.me/917602292599?text=Court%20Connect%20ka%20demo%20chahiye" target="_blank" rel="noopener" data-t="lp_demo"></a>
+      </div>
+    </div>
+  </section>
   <form class="lg" data-f="login">
-    <select class="lang" aria-label="Language"><option value="hi">Hinglish</option><option value="en">English</option><option value="bn">বাংলা</option></select>
+    <div class="lgtop"><label for="lglang"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><span data-t="lang_l2"></span></label>
+      <select class="lang" id="lglang"><option value="en">English</option><option value="bn">বাংলা</option><option value="hd">हिन्दी</option><option value="hi">Hinglish</option></select></div>
     <h1>Malda Court Connect</h1>
     <p data-t="tagline"></p>
     <label><span data-t="email"></span><input name="email" type="email" autocomplete="username" required></label>
@@ -21,11 +50,12 @@
     <button class="pri" data-t="loginbtn"></button>
     <p class="ft"><span data-t="support"></span>: <a href="tel:7602292599">7602292599</a></p>
   </form>
+ </div>
 </div>
 <div id="app" hidden>
   <header>
     <div><strong id="who"></strong><small id="bar"></small></div>
-    <div class="hr"><button class="pri" id="inst" data-a="inst" data-t="install" hidden></button><select class="lang" aria-label="Language"><option value="hi">Hinglish</option><option value="en">English</option><option value="bn">বাংলা</option></select><button class="ghost" data-a="out" data-t="logout"></button></div>
+    <div class="hr"><button class="pri" id="inst" data-a="inst" data-t="install" hidden></button><select class="lang" aria-label="Language / भाषा / ভাষা"><option value="en">English</option><option value="bn">বাংলা</option><option value="hd">हिन्दी</option><option value="hi">Hinglish</option></select><button class="ghost" data-a="out" data-t="logout"></button></div>
   </header>
   <nav id="tabs"></nav>
   <main id="view"></main>
@@ -33,6 +63,7 @@
 </div>
 <dialog id="dlg"></dialog>
 <div id="toast" role="status" hidden></div>
+<script src="/qr.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>
