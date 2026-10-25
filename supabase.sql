@@ -189,3 +189,5 @@ revoke all on clients, documents, drafts, notes from anon, authenticated;
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('case-docs', 'case-docs', false, 10485760, array['application/pdf','image/jpeg','image/png'])
 on conflict (id) do update set public = false;
+
+-- 10) Iske baad update-4.sql bhi Run karein (storage backend, link, Google Drive tokens).

@@ -412,6 +412,61 @@ const IC = {
 };
 const ico = (k, s = 20) => `<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k] || ''}</svg>`;
 
+// ---------- v5.1: storage, link, Google Drive — 4 bhasha [Hinglish, English, বাংলা, हिन्दी] ----------
+Object.assign(D, {
+  d_free: ['Free plan 1 GB (Supabase)', 'Free plan 1 GB (Supabase)', 'ফ্রি প্ল্যান ১ GB (Supabase)', 'फ़्री प्लान 1 GB (Supabase)'],
+  d_free_r2: ['Free plan 10 GB (Cloudflare R2)', 'Free plan 10 GB (Cloudflare R2)', 'ফ্রি প্ল্যান ১০ GB (Cloudflare R2)', 'फ़्री प्लान 10 GB (Cloudflare R2)'],
+  doc_add: ['📷 Photo/PDF daalein', '📷 Add photo/PDF', '📷 ছবি/PDF দিন', '📷 फ़ोटो/PDF डालें'],
+  doc_link: ['🔗 Link chipkayein', '🔗 Paste a link', '🔗 লিংক পেস্ট করুন', '🔗 लिंक चिपकाएँ'],
+  doc_to_app: ['PDF/JPG/PNG, 10 MB tak. Photo apne aap chhoti ho jaati hai.', 'PDF/JPG/PNG, up to 10 MB. Photos are made smaller automatically.', 'PDF/JPG/PNG, ১০ MB পর্যন্ত। ছবি নিজে থেকেই ছোট হয়ে যায়।', 'PDF/JPG/PNG, 10 MB तक। फ़ोटो अपने आप छोटी हो जाती है।'],
+  doc_to_drive: ['Files aapki Google Drive mein jayengi (folder "Court Connect").', 'Files go to your Google Drive (folder "Court Connect").', 'ফাইল আপনার Google Drive-এ যাবে (ফোল্ডার "Court Connect")।', 'फ़ाइलें आपकी Google Drive में जाएँगी (फ़ोल्डर "Court Connect")।'],
+  doc_shrunk: ['Photo chhoti ki: {0} → {1}', 'Photo compressed: {0} → {1}', 'ছবি ছোট করা হলো: {0} → {1}', 'फ़ोटो छोटी की: {0} → {1}'],
+  dk_link: ['Link', 'Link', 'লিংক', 'लिंक'], dk_drive: ['Google Drive', 'Google Drive', 'Google Drive', 'Google Drive'],
+  gd_connect: ['Google Drive jodein (ek baar)', 'Connect Google Drive (one time)', 'Google Drive যুক্ত করুন (একবার)', 'Google Drive जोड़ें (एक बार)'],
+  gd_on: ['✓ Drive judi hai ({0})', '✓ Drive connected ({0})', '✓ Drive যুক্ত আছে ({0})', '✓ Drive जुड़ी है ({0})'],
+  gd_off: ['Drive hatayein', 'Disconnect Drive', 'Drive সরান', 'Drive हटाएँ'],
+  gd_off_q: ['Google Drive ka jod hata dein? Files Drive mein hi rahengi, par team unhe app se nahi khol payegi.', 'Disconnect Google Drive? Files stay in your Drive, but the team will not be able to open them from the app.', 'Google Drive-এর সংযোগ সরাবেন? ফাইল Drive-এই থাকবে, কিন্তু টিম অ্যাপ থেকে খুলতে পারবে না।', 'Google Drive का जोड़ हटा दें? फ़ाइलें Drive में ही रहेंगी, पर टीम उन्हें ऐप से नहीं खोल पाएगी।'],
+  gd_ok: ['Google Drive jud gayi', 'Google Drive connected', 'Google Drive যুক্ত হয়েছে', 'Google Drive जुड़ गई'],
+  gd_no: ['Google Drive nahi judi ("Allow" nahi dabaya)', 'Google Drive not connected ("Allow" was not tapped)', 'Google Drive যুক্ত হয়নি ("Allow" চাপা হয়নি)', 'Google Drive नहीं जुड़ी ("Allow" नहीं दबाया)'],
+  gd_err: ['Google Drive nahi judi, dobara try karein', 'Could not connect Google Drive, please try again', 'Google Drive যুক্ত হয়নি, আবার চেষ্টা করুন', 'Google Drive नहीं जुड़ी, दोबारा कोशिश करें'],
+  gd_removed: ['Drive hata di gayi', 'Drive disconnected', 'Drive সরানো হয়েছে', 'Drive हटा दी गई'],
+  gd_fallback: ['Drive se jud nahi paye, file app mein save hui', 'Could not reach Drive; the file was saved in the app', 'Drive-এ পৌঁছানো যায়নি, ফাইল অ্যাপে সেভ হয়েছে', 'Drive से जुड़ नहीं पाए, फ़ाइल ऐप में सेव हुई'],
+  lk_h: ['Link chipkayein', 'Paste a link', 'লিংক পেস্ট করুন', 'लिंक चिपकाएँ'],
+  lk_name: ['Naam (jaise FIR copy)', 'Name (e.g. FIR copy)', 'নাম (যেমন FIR কপি)', 'नाम (जैसे FIR कॉपी)'],
+  lk_url: ['Link (https://...)', 'Link (https://...)', 'লিংক (https://...)', 'लिंक (https://...)'],
+  lk_help: ['Google Drive mein file > Share > General access "Restricted" > "Copy link". Phir yahan paste karein.', 'In Google Drive: file > Share > General access "Restricted" > "Copy link". Then paste it here.', 'Google Drive-এ ফাইল > Share > General access "Restricted" > "Copy link"। তারপর এখানে পেস্ট করুন।', 'Google Drive में फ़ाइल > Share > General access "Restricted" > "Copy link"। फिर यहाँ पेस्ट करें।'],
+  lk_save: ['Link jodein', 'Add link', 'লিংক যোগ করুন', 'लिंक जोड़ें'],
+  lk_bad: ['Sirf https:// wala sahi link chalega', 'Only a valid https:// link is allowed', 'শুধু সঠিক https:// লিংক চলবে', 'सिर्फ़ https:// वाला सही लिंक चलेगा'],
+  lk_warn: ['Ye Google Drive ka link nahi hai. Sirf bharosemand site ka link daalein. Phir bhi jodna hai?', 'This is not a Google Drive link. Only add links from sites you trust. Add it anyway?', 'এটি Google Drive-এর লিংক নয়। শুধু বিশ্বস্ত সাইটের লিংক দিন। তবুও যোগ করবেন?', 'यह Google Drive का लिंक नहीं है। सिर्फ़ भरोसेमंद साइट का लिंक डालें। फिर भी जोड़ना है?'],
+  lk_ok: ['Link jud gaya', 'Link added', 'লিংক যোগ হয়েছে', 'लिंक जुड़ गया'],
+  // Madad / Guide
+  g_docs_1: ['Case par "Kholein" > Documents > "📷 Photo/PDF daalein" (10 MB tak). Phone par camera se photo bhi le sakte hain.', 'On a case tap "Open" > Documents > "📷 Add photo/PDF" (up to 10 MB). On a phone you can also take a photo with the camera.', 'কেসে "খুলুন" > ডকুমেন্ট > "📷 ছবি/PDF দিন" (১০ MB পর্যন্ত)। ফোনে ক্যামেরা দিয়ে ছবিও তুলতে পারেন।', 'केस पर "खोलें" > डॉक्यूमेंट > "📷 फ़ोटो/PDF डालें" (10 MB तक)। फ़ोन पर कैमरे से फ़ोटो भी ले सकते हैं।'],
+  g_docs_4: ['Photo upload karne se pehle app use apne aap chhota kar deta hai (1600px, JPEG), jaise 4 MB → 0.4 MB. PDF waise hi jaati hai. Isse sabki jagah bachti hai.', 'Before upload the app shrinks photos automatically (1600px, JPEG), e.g. 4 MB → 0.4 MB. PDFs go as they are. This saves space for everyone.', 'আপলোডের আগে অ্যাপ নিজেই ছবি ছোট করে (1600px, JPEG), যেমন 4 MB → 0.4 MB। PDF যেমন আছে তেমনই যায়। এতে সবার জায়গা বাঁচে।', 'अपलोड से पहले ऐप फ़ोटो को अपने आप छोटा कर देता है (1600px, JPEG), जैसे 4 MB → 0.4 MB। PDF वैसे ही जाती है। इससे सबकी जगह बचती है।'],
+  g_link_d: ['File Google Drive mein pehle se hai? Upload ki jagah uska link case mein chipka dein. App ki jagah bilkul nahi lagti.', 'Is the file already in Google Drive? Paste its link into the case instead of uploading. It uses no app space at all.', 'ফাইল আগে থেকেই Google Drive-এ আছে? আপলোডের বদলে তার লিংক কেসে পেস্ট করুন। অ্যাপের কোনো জায়গা লাগে না।', 'फ़ाइल पहले से Google Drive में है? अपलोड की जगह उसका लिंक केस में चिपका दें। ऐप की बिल्कुल जगह नहीं लगती।'],
+  g_link_1: ['Phone par: Google Drive app > file ke aage ⋮ > Share > General access "Restricted" rehne dein > "Copy link".', 'On a phone: Google Drive app > ⋮ next to the file > Share > keep General access "Restricted" > "Copy link".', 'ফোনে: Google Drive অ্যাপ > ফাইলের পাশে ⋮ > Share > General access "Restricted" রাখুন > "Copy link"।', 'फ़ोन पर: Google Drive ऐप > फ़ाइल के आगे ⋮ > Share > General access "Restricted" रहने दें > "Copy link"।'],
+  g_link_2: ['Computer par: drive.google.com > file par right-click > Share > General access "Restricted" > "Copy link".', 'On a computer: drive.google.com > right-click the file > Share > General access "Restricted" > "Copy link".', 'কম্পিউটারে: drive.google.com > ফাইলে right-click > Share > General access "Restricted" > "Copy link"।', 'कंप्यूटर पर: drive.google.com > फ़ाइल पर right-click > Share > General access "Restricted" > "Copy link"।'],
+  g_link_3: ['"Restricted" link sirf unhe khulta hai jinka Gmail "Add people" mein joda hai. Team ya client ko dikhana ho to unka Gmail wahan jodein.', 'A "Restricted" link opens only for people whose Gmail is added under "Add people". Add your team or client there if they need it.', '"Restricted" লিংক শুধু তাঁদের জন্য খোলে যাঁদের Gmail "Add people"-এ যোগ করা আছে। টিম বা ক্লায়েন্টকে দেখাতে হলে তাঁদের Gmail সেখানে যোগ করুন।', '"Restricted" लिंक सिर्फ़ उन्हें खुलता है जिनका Gmail "Add people" में जोड़ा है। टीम या क्लाइंट को दिखाना हो तो उनका Gmail वहाँ जोड़ें।'],
+  g_link_4: ['App mein: case > Documents > "🔗 Link chipkayein" > naam likhein, link paste karein > "Link jodein".', 'In the app: case > Documents > "🔗 Paste a link" > type a name, paste the link > "Add link".', 'অ্যাপে: কেস > ডকুমেন্ট > "🔗 লিংক পেস্ট করুন" > নাম লিখুন, লিংক পেস্ট করুন > "লিংক যোগ করুন"।', 'ऐप में: केस > डॉक्यूमेंट > "🔗 लिंक चिपकाएँ" > नाम लिखें, लिंक पेस्ट करें > "लिंक जोड़ें"।'],
+  gd_t: ['Google Drive jodein', 'Connect Google Drive', 'Google Drive যুক্ত করুন', 'Google Drive जोड़ें'],
+  g_gdrive_d: ['Ek baar jodne ke baad aapki upload ki files aapki apni Google Drive (folder "Court Connect") mein jaati hain. App ki jagah bachti hai.', 'After a one-time connection, files you upload go to your own Google Drive (folder "Court Connect"). This saves app space.', 'একবার যুক্ত করলে আপনার আপলোড করা ফাইল আপনার নিজের Google Drive-এ (ফোল্ডার "Court Connect") যায়। অ্যাপের জায়গা বাঁচে।', 'एक बार जोड़ने के बाद आपकी अपलोड की फ़ाइलें आपकी अपनी Google Drive (फ़ोल्डर "Court Connect") में जाती हैं। ऐप की जगह बचती है।'],
+  g_gdrive_1: ['Ek baar: kisi bhi case > Documents > "Google Drive jodein (ek baar)" > apna Gmail chunein > "Allow". Phone aur computer dono par yahi tareeka.', 'One time: any case > Documents > "Connect Google Drive (one time)" > choose your Gmail > "Allow". Same on phone and computer.', 'একবার: যেকোনো কেস > ডকুমেন্ট > "Google Drive যুক্ত করুন (একবার)" > নিজের Gmail বাছুন > "Allow"। ফোন আর কম্পিউটারে একই নিয়ম।', 'एक बार: किसी भी केस > डॉक्यूमेंट > "Google Drive जोड़ें (एक बार)" > अपना Gmail चुनें > "Allow"। फ़ोन और कंप्यूटर दोनों पर यही तरीका।'],
+  g_gdrive_2: ['Phir "📷 Photo/PDF daalein" se file apne aap Drive mein jaati hai. Team aur client app se hi khol lete hain, Drive share karne ki zaroorat nahi.', 'Then "📷 Add photo/PDF" sends the file to Drive automatically. Your team and client open it from the app; no Drive sharing needed.', 'তারপর "📷 ছবি/PDF দিন" দিলে ফাইল নিজে থেকেই Drive-এ যায়। টিম আর ক্লায়েন্ট অ্যাপ থেকেই খোলেন, Drive শেয়ার করতে হয় না।', 'फिर "📷 फ़ोटो/PDF डालें" से फ़ाइल अपने आप Drive में जाती है। टीम और क्लाइंट ऐप से ही खोल लेते हैं, Drive शेयर करने की ज़रूरत नहीं।'],
+  g_gdrive_3: ['App sirf apni banayi files dekh sakta hai, aapki baaki Drive nahi. Band karna ho to Documents mein "Drive hatayein".', 'The app can see only the files it created, not the rest of your Drive. To stop, tap "Disconnect Drive" in Documents.', 'অ্যাপ শুধু নিজের তৈরি ফাইল দেখতে পায়, আপনার বাকি Drive নয়। বন্ধ করতে ডকুমেন্টে "Drive সরান"।', 'ऐप सिर्फ़ अपनी बनाई फ़ाइलें देख सकता है, आपकी बाकी Drive नहीं। बंद करना हो तो डॉक्यूमेंट में "Drive हटाएँ"।']
+});
+Object.assign(E, {
+  'Sirf https:// wala sahi link chalega': ['Only a valid https:// link is allowed', 'শুধু সঠিক https:// লিংক চলবে'],
+  'Google Drive abhi band hai': ['Google Drive is not available right now', 'Google Drive এখন বন্ধ আছে'],
+  'Ye file abhi nahi khul sakti (storage setting dekhein)': ['This file cannot be opened right now (check storage settings)', 'এই ফাইল এখন খোলা যাচ্ছে না (স্টোরেজ সেটিং দেখুন)'],
+  'Link purana ho gaya, dobara Download dabayein': ['The link expired, tap Download again', 'লিংকের মেয়াদ শেষ, আবার ডাউনলোড চাপুন'],
+  'Drive se file nahi mil rahi (upload karne wale ne Drive hata di?)': ['Could not get the file from Drive (did the uploader disconnect Drive?)', 'Drive থেকে ফাইল পাওয়া যাচ্ছে না (আপলোডকারী কি Drive সরিয়েছেন?)']
+});
+Object.assign(HE, {
+  'Sirf https:// wala sahi link chalega': 'सिर्फ़ https:// वाला सही लिंक चलेगा', 'Google Drive abhi band hai': 'Google Drive अभी बंद है',
+  'Ye file abhi nahi khul sakti (storage setting dekhein)': 'यह फ़ाइल अभी नहीं खुल सकती (स्टोरेज सेटिंग देखें)',
+  'Link purana ho gaya, dobara Download dabayein': 'लिंक पुराना हो गया, दोबारा डाउनलोड दबाएँ',
+  'Drive se file nahi mil rahi (upload karne wale ne Drive hata di?)': 'Drive से फ़ाइल नहीं मिल रही (अपलोड करने वाले ने Drive हटा दी?)'
+});
+
 // r = kaun dekhe: S senior, M munshi, J junior, C client. s = steps [number ya [key, roles]]
 const GUIDE = [
   { id: 'dash', t: 'tab_dash', go: 'dash', r: 'SMJ', s: [1, 2, [3, 'SM']] },
@@ -421,7 +476,9 @@ const GUIDE = [
   { id: 'clients', t: 'tab_clients', go: 'clients', r: 'SM', s: [1, 2, 3] },
   { id: 'tasks', t: 'tab_tasks', go: 'tasks', r: 'SMJ', s: [[1, 'SM'], 2, 3] },
   { id: 'fees', t: 'g_fees_t', go: 'fees', r: 'SM', s: [1, 2, 3, 4] },
-  { id: 'docs', t: 'docs', go: 'cases', r: 'SMJC', s: [[1, 'SMJ'], ['1c', 'C'], 2, 3] },
+  { id: 'docs', t: 'docs', go: 'cases', r: 'SMJC', s: [[1, 'SMJ'], ['1c', 'C'], [4, 'SMJ'], 2, 3] },
+  { id: 'link', ic: 'docs', t: 'lk_h', go: 'cases', r: 'SMJ', s: [1, 2, 3, 4] },
+  { id: 'gdrive', ic: 'docs', t: 'gd_t', go: 'cases', r: 'SMJ', s: [1, 2, 3], need: () => S.drive.enabled },
   { id: 'drafts', t: 'drafts', go: 'cases', r: 'SMJ', s: [1, 2, 3, 4] },
   { id: 'law', t: 'tab_law', go: 'law', r: 'SMJ', s: [1, 2, 3] },
   { id: 'notes', t: 'tab_notes', go: 'notes', r: 'SMJ', s: [1, 2, 3] },
@@ -463,7 +520,7 @@ function vHelp() {
   const news = r !== 'C' ? `<section class="panel new"><h3>${ico('star', 18)} ${t('new_h')}</h3><ul>${[1, 2, 3, 4, 5, 6].map(i => `<li>${t('new' + i)}</li>`).join('')}</ul></section>` : '';
   return `<div class="hh"><h2>${ico('help', 22)} ${t('help_h')}</h2><p class="m">${t('help_sub')}</p></div>
     <div class="htop">${news}${r === 'S' ? startList() : ''}</div>
-    <div class="guide">${GUIDE.filter(g => g.r.includes(r)).map(guideCard).join('')}</div>
+    <div class="guide">${GUIDE.filter(g => g.r.includes(r) && (!g.need || g.need())).map(guideCard).join('')}</div>
     <section class="panel contact"><h3>${t('help_contact')}</h3><p>${t('help_who')}</p>
       <div class="row"><a class="btn pri" href="tel:+917602292599">${ico('phone', 16)} ${t('call_n')}</a><a class="btn ghost" href="https://wa.me/917602292599?text=${encodeURIComponent(t('wa_us_msg'))}" target="_blank" rel="noopener">${ico('wa', 16)} ${t('wa_us')}</a></div>
       <div class="row"><button class="ghost" data-a="welcome">${t('wl_again')}</button>${hidHints().length ? `<button class="ghost" data-a="hintreset">${t('hint_reset')}</button>` : ''}</div></section>`;
@@ -492,7 +549,7 @@ function applyStatic() {
 }
 
 const S = { user: JSON.parse(localStorage.getItem('u') || 'null'), cases: [], fees: [], users: [], tasks: [], clients: [], notes: [], chamber: {}, dash: {},
-  docs: {}, drafts: {}, law: null, lawQ: '', secTarget: null, cal: null, tab: 'dash', view: null, q: '', cq: '', nq: '', openAdd: '', prefill: null, pending: 0 };
+  docs: {}, drafts: {}, drive: { enabled: false }, law: null, lawQ: '', secTarget: null, cal: null, tab: 'dash', view: null, q: '', cq: '', nq: '', openAdd: '', prefill: null, pending: 0 };
 let TODAY = iso(new Date()), B = {};
 const TABS = {
   senior: [['dash', 'tab_dash'], ['cal', 'tab_cal'], ['cases', 'tab_cases'], ['clients', 'tab_clients'], ['tasks', 'tab_tasks'], ['fees', 'tab_fees'], ['notes', 'tab_notes'], ['law', 'tab_law'], ['team', 'tab_team'], ['backup', 'tab_backup'], ['help', 'tab_help']],
@@ -561,6 +618,7 @@ async function load() {
       S.notes = await api('/notes'); await kv.set('notes', S.notes);
       S.chamber = await api('/chamber'); await kv.set('chamber', S.chamber);
       S.dash = await api('/dashboard'); await kv.set('dash', S.dash);
+      try { S.drive = await api('/drive/status'); } catch { S.drive = { enabled: false }; }
     }
   } catch (e) {
     if (e.server) toast(e.message);
@@ -630,9 +688,9 @@ function vDash() {
   let tiles = tile(nToday, t('d_today'), 'gold', 'data-a="scroll" data-k="g-today"') + tile(nLate, t('d_late'), nLate ? 'red' : '', 'data-a="scroll" data-k="g-late"')
     + tile(nWeek, t('d_week'), '', 'data-a="tab" data-k="cal"') + tile(nTask, t('d_tasks'), '', 'data-a="tab" data-k="tasks"');
   if (canAdd()) {
-    const tot = Object.values(B).reduce((s, b) => s + Math.max(b.ch - b.pd, 0), 0), st = S.dash.storage_bytes || 0, pct = Math.min(100, st / 1073741824 * 100);
+    const tot = Object.values(B).reduce((s, b) => s + Math.max(b.ch - b.pd, 0), 0), st = S.dash.storage_bytes || 0, r2 = S.dash.storage_backend === 'r2', lim = S.dash.storage_limit || (r2 ? 10737418240 : 1073741824), pct = Math.min(100, st / lim * 100);
     tiles += tile(money(tot), t('d_fees'), '', 'data-a="tab" data-k="fees"')
-      + tile(mb(st), t('d_store'), 'store', '', `<i class="meter"><i style="width:${pct.toFixed(1)}%"></i></i><small>${t('d_free')}</small>`);
+      + tile(mb(st), t('d_store'), 'store' + (pct >= 80 ? ' red' : ''), '', `<i class="meter"><i style="width:${pct.toFixed(1)}%"></i></i><small>${pct < 1 && st ? '<1' : Math.round(pct)}% • ${t(r2 ? 'd_free_r2' : 'd_free')}</small>`);
   }
   const qb = (k, l) => `<button class="ghost" data-a="quick" data-k="${k}">${l}</button>`;
   const quick = (canAdd() ? qb('case', t('q_case')) + qb('client', t('q_client')) + qb('task', t('q_task')) : '') + qb('note', t('q_note')) + qb('law', t('q_law')) + qb('cal', t('tab_cal'));
@@ -710,9 +768,9 @@ function vCase(id) {
   if (canAdd()) { const b = B[c.id] || { ch: 0, pd: 0 }; h += `<section class="panel"><h3>${t('fees')}</h3><p class="m">${t('fee_sum', money(b.ch), money(b.pd), money(b.ch - b.pd))}</p>${upiBlock(c)}</section>`; }
   // documents
   const docs = S.docs[c.id];
-  h += `<section class="panel"><h3>${t('docs')}</h3>${staff() && navigator.onLine ? `<label class="up">${t('doc_up')}<input type="file" id="docup" data-id="${esc(c.id)}" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"></label>` : ''}
-    ${!docs ? `<p class="m">${navigator.onLine ? t('loading') : t('need_net')}</p>` : docs.length ? docs.map(d => `<div class="fe doc"><div><b>${esc(d.name)}</b><p class="m">${esc(d.mime.split('/')[1].toUpperCase())} • ${kb(d.size)} • ${esc(fmt(String(d.created_at).slice(0, 10)))}</p></div>
-      <div class="row"><button class="ghost" data-a="dldoc" data-id="${esc(d.id)}">${t('doc_dl')}</button>${isSr() ? `<button class="ghost danger" data-a="deldoc" data-id="${esc(d.id)}" data-c="${esc(c.id)}">${t('del')}</button>` : ''}</div></div>`).join('') : `<p class="m">${t('doc_none')}</p>`}</section>`;
+  h += `<section class="panel"><h3>${t('docs')}</h3>${staff() && navigator.onLine ? docBar(c) : ''}
+    ${!docs ? `<p class="m">${navigator.onLine ? t('loading') : t('need_net')}</p>` : docs.length ? docs.map(d => `<div class="fe doc"><div><b>${d.backend === 'link' ? '🔗 ' : ''}${esc(d.name)}</b><p class="m">${docMeta(d)} • ${esc(fmt(String(d.created_at).slice(0, 10)))}</p></div>
+      <div class="row"><button class="ghost" data-a="dldoc" data-id="${esc(d.id)}">${t(d.backend === 'link' ? 'open' : 'doc_dl')}</button>${isSr() ? `<button class="ghost danger" data-a="deldoc" data-id="${esc(d.id)}" data-c="${esc(c.id)}">${t('del')}</button>` : ''}</div></div>`).join('') : `<p class="m">${t('doc_none')}</p>`}</section>`;
   if (staff()) {
     const dr = S.drafts[c.id];
     h += `<section class="panel"><h3>${t('drafts')}</h3><p class="m">${t('newdraft')}</p><div class="row tpl">${KINDS.map(k => `<button class="ghost" data-a="draft" data-id="${esc(c.id)}" data-k="${k}">${t('k_' + k)}</button>`).join('')}</div>
@@ -729,8 +787,39 @@ async function loadCaseExtras(id) {
     if (S.view && S.view.t === 'case' && S.view.id === id) render();
   } catch (e) { if (e.server) toast(e.message); }
 }
-async function upload(id, file) {
+// Documents ke bade button: upload (camera ya file), link, Google Drive
+function docBar(c) {
+  const dv = S.drive || {};
+  const gd = !dv.enabled ? '' : dv.connected
+    ? `<div class="gdon"><span>${esc(t('gd_on', dv.email || 'Gmail'))}</span><button class="ghost" data-a="gddisc">${t('gd_off')}</button></div>`
+    : `<button class="ghost gdbtn" data-a="gdconnect">${t('gd_connect')}</button>`;
+  return `<div class="docbar"><label class="bigbtn pri">${t('doc_add')}<input type="file" id="docup" data-id="${esc(c.id)}" accept="image/*,.pdf,application/pdf"></label>
+    <button class="bigbtn ghost" data-a="addlink" data-id="${esc(c.id)}">${t('doc_link')}</button></div>
+    <p class="m small">${t(dv.enabled && dv.connected ? 'doc_to_drive' : 'doc_to_app')}</p>${gd}`;
+}
+const docMeta = d => d.backend === 'link' ? esc(t('dk_link')) : esc((d.mime.split('/')[1] || '').toUpperCase()) + ' • ' + kb(d.size) + (d.backend === 'gdrive' ? ' • ' + esc(t('dk_drive')) : '');
+// Photo ko upload se pehle chhota karein: lambi side max 1600px, JPEG quality 0.75. PDF waisi hi. Chhoti na ho to asli file.
+const MAXPX = 1600;
+async function shrink(file) {
+  const hd = [...new Uint8Array(await file.slice(0, 8).arrayBuffer())].map(x => x.toString(16).padStart(2, '0')).join('');
+  if (hd.startsWith('255044462d') || !/^image\//.test(file.type || 'image/') || typeof createImageBitmap !== 'function') return { file };   // PDF waisi hi
+  const jpgPng = hd.startsWith('ffd8ff') || hd === '89504e470d0a1a0a';
+  let bmp; try { bmp = await createImageBitmap(file); } catch { return { file }; }      // decode na ho to asli file
+  const sc = Math.min(1, MAXPX / Math.max(bmp.width, bmp.height));
+  if (sc === 1 && jpgPng && file.size <= 400 * 1024) { if (bmp.close) bmp.close(); return { file }; }   // pehle se chhoti photo
+  const w = Math.max(1, Math.round(bmp.width * sc)), h = Math.max(1, Math.round(bmp.height * sc));
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const g = cv.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); g.imageSmoothingQuality = 'high'; g.drawImage(bmp, 0, 0, w, h);
+  if (bmp.close) bmp.close();
+  const blob = await new Promise(ok => cv.toBlob(ok, 'image/jpeg', 0.75));
+  cv.width = cv.height = 0;
+  if (!blob || (jpgPng && blob.size >= file.size)) return { file };       // chhoti nahi hui: asli bhejein (HEIC/WebP hamesha JPEG banegi)
+  const name = (file.name || 'photo').replace(/\.[^.]*$/, '') + '.jpg';
+  return { file: new File([blob], name, { type: 'image/jpeg' }), from: file.size, to: blob.size };
+}
+async function upload(id, file0) {
   if (!navigator.onLine) return toast(t('need_net'));
+  const { file, from, to } = await shrink(file0);
   if (file.size > 10 * 1024 * 1024) return toast(t('doc_big'));
   const head = new Uint8Array(await file.slice(0, 8).arrayBuffer()), hx = [...head].map(x => x.toString(16).padStart(2, '0')).join('');
   if (!(hx.startsWith('255044462d') || hx.startsWith('ffd8ff') || hx === '89504e470d0a1a0a')) return toast(t('doc_type'));
@@ -739,7 +828,9 @@ async function upload(id, file) {
   const d = await r.json().catch(() => ({}));
   if (r.status === 401) { logout(); return; }
   if (!r.ok) return toast(se(d.error || 'Upload nahi hua, dobara try karein'));
-  (S.docs[id] ||= []).unshift(d); toast(t('doc_ok')); load(); render();
+  (S.docs[id] ||= []).unshift(d);
+  if (d.fallback) try { S.drive = await api('/drive/status'); } catch { /* agli baar */ }
+  toast([from ? t('doc_shrunk', kb(from), kb(to)) : '', t(d.fallback ? 'gd_fallback' : 'doc_ok')].filter(Boolean).join(' • ')); load(); render();
 }
 
 // ---------- clients ----------
@@ -1307,8 +1398,30 @@ const ACT = {
   },
   dldoc: async ({ id }) => {
     if (!navigator.onLine) return toast(t('need_net'));
-    const { url } = await api('/docs/' + id + '/url');
-    const a = document.createElement('a'); a.href = url; a.rel = 'noopener'; document.body.appendChild(a); a.click(); a.remove();
+    const { url, open } = await api('/docs/' + id + '/url');
+    if (!open && url.startsWith('/api/')) {          // Drive file: apne server se (60 s token), galti ho to toast
+      const r = await fetch(url), name = ((Object.values(S.docs).flat().find(d => d.id === id) || {}).name) || 'document';
+      if (!r.ok) { const d = await r.json().catch(() => ({})); return toast(se(d.error || 'Document nahi mila')); }
+      return dlFile(name, await r.blob(), r.headers.get('content-type') || 'application/octet-stream', false);
+    }
+    const a = document.createElement('a'); a.href = url; a.rel = 'noopener noreferrer'; if (open) a.target = '_blank';
+    document.body.appendChild(a); a.click(); a.remove();
+  },
+  addlink: ({ id }) => {
+    $('#dlg').innerHTML = `<form data-f="link" data-id="${esc(id)}"><h3>${t('lk_h')}</h3><p class="m">${t('lk_help')}</p>
+      <label>${t('lk_name')}<input name="name" maxlength="120" required></label>
+      <label>${t('lk_url')}<input name="url" type="url" inputmode="url" maxlength="1000" placeholder="https://drive.google.com/..." required></label>
+      <div class="row"><button class="pri">${t('lk_save')}</button><button type="button" class="ghost" data-a="x">${t('close')}</button></div></form>`;
+    $('#dlg').showModal();
+  },
+  gdconnect: async () => {
+    if (!navigator.onLine) return toast(t('need_net'));
+    const { url } = await api('/drive/connect', { method: 'POST' });
+    if (typeof url === 'string' && url.startsWith('https://accounts.google.com/')) location.href = url; else toast(t('gd_err'));
+  },
+  gddisc: async () => {
+    if (!confirm(t('gd_off_q'))) return;
+    await api('/drive/disconnect', { method: 'POST' }); S.drive = { ...S.drive, connected: false, email: '' }; toast(t('gd_removed')); render();
   },
   deldoc: async ({ id, c }) => { if (!confirm(t('doc_del_q'))) return; await api('/docs/' + id, { method: 'DELETE' }); S.docs[c] = (S.docs[c] || []).filter(d => d.id !== id); load(); render(); },
   draft: ({ id, k, d }) => {
@@ -1346,6 +1459,14 @@ async function addSection(caseId, sec) {
 }
 const formData = f => { const b = Object.fromEntries(new FormData(f)); for (const k in b) if (typeof b[k] === 'string') b[k] = b[k].trim(); return b; };
 const FORM = {
+  link: async f => {
+    const b = formData(f), id = f.dataset.id; let u = null;
+    try { u = new URL(b.url); } catch { u = null; }
+    if (!u || u.protocol !== 'https:') return toast(t('lk_bad'));
+    if (!['drive.google.com', 'docs.google.com'].includes(u.hostname.toLowerCase()) && !confirm(t('lk_warn'))) return;
+    const d = await api(`/cases/${id}/links`, { method: 'POST', body: { name: b.name, url: u.href } });
+    $('#dlg').close(); (S.docs[id] ||= []).unshift(d); toast(t('lk_ok')); render();
+  },
   login: async f => {
     $('#err').textContent = '';
     try {
@@ -1416,7 +1537,7 @@ const FORM = {
 };
 function logout() {
   localStorage.removeItem('t'); localStorage.removeItem('u'); S.user = null; S.view = null; S.secTarget = null;
-  S.cases = []; S.fees = []; S.users = []; S.tasks = []; S.clients = []; S.notes = []; S.chamber = {}; S.dash = {}; S.docs = {}; S.drafts = {};
+  S.cases = []; S.fees = []; S.users = []; S.tasks = []; S.clients = []; S.notes = []; S.chamber = {}; S.dash = {}; S.docs = {}; S.drafts = {}; S.drive = { enabled: false };
   kv.clear(); render();
 }
 
@@ -1453,7 +1574,10 @@ let DIP; addEventListener('beforeinstallprompt', e => { e.preventDefault(); DIP 
 setInterval(flush, 30000);
 
 async function start() {
+  const dp = new URLSearchParams(location.search).get('drive');      // Google se wapas aaye (Drive jodne ke baad)
+  if (dp) history.replaceState(null, '', location.pathname);
   applyStatic(); render(); if (!S.user) return; await count(); await flush(); await load();
+  if (dp) toast(t({ ok: 'gd_ok', no: 'gd_no' }[dp] || 'gd_err'));
   if (S.user && !localStorage.getItem(wKey()) && !$('#dlg').open) showWelcome();   // har user ko pehli baar ek swagat sandesh
 }
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});

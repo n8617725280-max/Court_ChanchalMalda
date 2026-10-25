@@ -4,6 +4,8 @@ const express = require('express'), path = require('path'), crypto = require('cr
 const bcrypt = require('bcryptjs'), jwt = require('jsonwebtoken');
 const helmet = require('helmet'), rateLimit = require('express-rate-limit');
 const { createClient } = require('@supabase/supabase-js');
+const { makeStorage, MAXDOC } = require('./storage');   // server-side modules: PAGES list mein nahi, bahar nahi dikhte
+const { makeDrive } = require('./drive');
 
 const { SUPABASE_URL, SUPABASE_SERVICE_KEY, JWT_SECRET, SETUP_KEY } = process.env;
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !JWT_SECRET || JWT_SECRET.length < 32) {
@@ -12,11 +14,15 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !JWT_SECRET || JWT_SECRET.length <
 }
 const db = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
 const DUMMY = bcrypt.hashSync('dummy-password', 10);
+let store; try { store = makeStorage(db); } catch (e) { console.error(e.message + '. Server band.'); process.exit(1); }
+const drive = makeDrive(db);     // GOOGLE_* aur DRIVE_TOKEN_KEY na hon to drive.enabled = false (feature chhupa rahega)
 
 const app = express();
 app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: { useDefaults: true, directives: { 'upgrade-insecure-requests': null } } }));
 app.use(express.json({ limit: '1mb' }));
+// Keep-awake ping (cron-job.org har 10 minute). Na login, na database.
+app.get('/healthz', (q, s) => s.set('Cache-Control', 'no-store').json({ ok: true }));
 // Saari files ek hi folder mein hain. Sirf ye allowed files bahar dikhengi (server.js, package.json wagairah nahi).
 const PAGES = ['index.html', 'app.js', 'app.css', 'sw.js', 'setup.html', 'setup.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'owner.html', 'owner.js', 'qr.js', 'law-sections.json'];
 app.get('/', (q, s) => s.sendFile('index.html', { root: __dirname }));
@@ -329,69 +335,156 @@ app.get('/api/dashboard', auth, need('senior', 'munshi', 'junior'), wrap(async (
   }
   const nm = await names(u.chamber_id);
   const out = { recent: recent.slice(0, 15).map(r => ({ ...r, by: nm[r.changed_by] || '' })) };
-  if (u.role !== 'junior') out.storage_bytes = (await all(() => db.from('documents').select('size').eq('chamber_id', u.chamber_id).order('id'))).reduce((a, d) => a + (+d.size || 0), 0);
+  if (u.role !== 'junior') {     // sirf abhi wale backend (Supabase 1 GB / R2 10 GB) ki jagah; Drive aur link ginti mein nahi
+    const cur = store.current.name;
+    out.storage_bytes = (await all(() => db.from('documents').select('size,backend').eq('chamber_id', u.chamber_id).order('id')))
+      .filter(d => (d.backend || 'supabase') === cur).reduce((a, d) => a + (+d.size || 0), 0);
+    out.storage_backend = cur; out.storage_limit = store.limit;
+  }
   s.json(out);
 }));
 
-// ---------- document vault (private Supabase Storage bucket) ----------
-const BUCKET = 'case-docs', MAXDOC = 10 * 1024 * 1024;
-const DF = 'id,case_id,name,mime,size,uploaded_by,created_at';
+// ---------- document vault (Supabase Storage / Cloudflare R2 / Google Drive / link) ----------
+// Har row mein backend: 'supabase' (purani rows null = supabase), 'r2', 'gdrive', 'link'
+const DF = 'id,case_id,name,mime,size,backend,uploaded_by,created_at';
+const LINK_MIME = 'text/uri-list';
 const sniff = b => {                      // file ka type uske pehle bytes (magic bytes) se, naam/extension par bharosa nahi
   if (b.length > 4 && b.slice(0, 5).toString('latin1') === '%PDF-') return { mime: 'application/pdf', ext: 'pdf' };
   if (b.length > 3 && b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF) return { mime: 'image/jpeg', ext: 'jpg' };
   if (b.length > 8 && b.slice(0, 8).equals(Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]))) return { mime: 'image/png', ext: 'png' };
   return null;
 };
-async function ensureBucket() {           // bucket na ho to bana do (hamesha private)
-  try {
-    const { data, error } = await db.storage.getBucket(BUCKET);
-    if (error || !data) {
-      const r = await db.storage.createBucket(BUCKET, { public: false, fileSizeLimit: MAXDOC, allowedMimeTypes: ['application/pdf', 'image/jpeg', 'image/png'] });
-      if (r.error) console.error('Storage bucket nahi bana:', r.error.message); else console.log('Storage bucket bana: ' + BUCKET);
-    } else if (data.public) {
-      await db.storage.updateBucket(BUCKET, { public: false, fileSizeLimit: MAXDOC, allowedMimeTypes: ['application/pdf', 'image/jpeg', 'image/png'] });
-      console.log('Storage bucket ko private kiya: ' + BUCKET);
-    }
-  } catch (e) { console.error('Storage check fail:', e.message); }
-}
+const fileName = (raw, ext) => {
+  let name = ''; try { name = decodeURIComponent(String(raw || '')); } catch { name = ''; }
+  return str(name.replace(/[\\/\u0000-\u001f<>"]/g, '_'), 120) || ('document.' + ext);
+};
 const upLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: 40, standardHeaders: true, legacyHeaders: false, message: { error: 'Bahut koshish ho gayi. 15 minute baad try karein' } });
 const dlLimit = rateLimit({ windowMs: 5 * 60 * 1000, max: 120, standardHeaders: true, legacyHeaders: false, message: { error: 'Bahut koshish ho gayi. 15 minute baad try karein' } });
 app.get('/api/cases/:id/docs', auth, wrap(async (q, s) => {
   const c = await getCase(q, q.params.id); if (!c) return s.status(404).json({ error: 'Case nahi mila' });
-  s.json(ok(await db.from('documents').select(DF).eq('chamber_id', c.chamber_id).eq('case_id', c.id).order('created_at', { ascending: false })).data);
+  const rows = ok(await db.from('documents').select(DF).eq('chamber_id', c.chamber_id).eq('case_id', c.id).order('created_at', { ascending: false })).data;
+  s.json(rows.map(d => ({ ...d, backend: d.backend || 'supabase' })));
 }));
 // Upload: body = file ke raw bytes (application/octet-stream), naam header x-file-name mein. Sirf isi route par 10 MB limit.
+// Uploader ne Google Drive jodi hai to file uski Drive mein, warna app storage (Supabase/R2) mein.
 app.post('/api/cases/:id/docs', auth, need('senior', 'munshi', 'junior'), upLimit, express.raw({ type: 'application/octet-stream', limit: MAXDOC }), wrap(async (q, s) => {
-  const c = await getCase(q, q.params.id); if (!c) return s.status(404).json({ error: 'Case nahi mila' });
+  const c = await getCase(q, q.params.id, ',case_no,party_name'); if (!c) return s.status(404).json({ error: 'Case nahi mila' });
   const buf = q.body;
   if (!Buffer.isBuffer(buf) || !buf.length) return s.status(400).json({ error: 'File khaali hai' });
   if (buf.length > MAXDOC) return s.status(413).json({ error: 'File 10 MB se badi hai' });
   const kind = sniff(buf); if (!kind) return s.status(400).json({ error: 'Sirf PDF, JPG ya PNG file chalegi' });
-  let name = ''; try { name = decodeURIComponent(String(q.headers['x-file-name'] || '')); } catch { name = ''; }
-  name = str(name.replace(/[\\/\u0000-\u001f<>"]/g, '_'), 120) || ('document.' + kind.ext);
-  const path = `${c.chamber_id}/${c.id}/${crypto.randomUUID()}.${kind.ext}`;
-  const up = await db.storage.from(BUCKET).upload(path, buf, { contentType: kind.mime, upsert: false });
-  if (up.error) { console.error(up.error); return s.status(500).json({ error: 'Upload nahi hua, dobara try karein' }); }
-  const { data, error } = await db.from('documents').insert({ chamber_id: c.chamber_id, case_id: c.id, name, mime: kind.mime, size: buf.length, path, uploaded_by: q.user.id }).select(DF).single();
-  if (error) { await db.storage.from(BUCKET).remove([path]); throw error; }
-  s.json(data);
+  const name = fileName(q.headers['x-file-name'], kind.ext);
+  const base = { chamber_id: c.chamber_id, case_id: c.id, name, mime: kind.mime, size: buf.length, uploaded_by: q.user.id };
+  let fallback = false;
+  if (drive.enabled) {
+    let f = null;
+    try { f = await drive.upload(q.user, c.case_no || c.party_name || 'Case', name, buf, kind.mime); }
+    catch (e) { console.error('Drive upload fail, app storage mein rakh rahe hain:', e.message); fallback = true; }
+    if (f) {
+      const { data, error } = await db.from('documents').insert({ ...base, path: 'gdrive/' + f.id, backend: 'gdrive', drive_file_id: f.id, url: f.webViewLink || null }).select(DF).single();
+      if (error) { try { await drive.remove(q.user.id, c.chamber_id, f.id); } catch { /* best effort */ } throw error; }
+      return s.json(data);
+    }
+  }
+  const be = store.current, path = `${c.chamber_id}/${c.id}/${crypto.randomUUID()}.${kind.ext}`;
+  try { await be.put(path, buf, kind.mime); } catch (e) { console.error(e); return s.status(500).json({ error: 'Upload nahi hua, dobara try karein' }); }
+  const { data, error } = await db.from('documents').insert({ ...base, path, backend: be.name }).select(DF).single();
+  if (error) { try { await be.del(path); } catch { /* best effort */ } throw error; }
+  s.json(fallback ? { ...data, fallback: true } : data);
 }));
-// Download: access check ke baad 60 second ka signed URL
+// Link chipkayein: sirf https. drive.google.com / docs.google.com seedhe; baaki https chalega par warn: true
+const GOOGLE_HOSTS = ['drive.google.com', 'docs.google.com'];
+app.post('/api/cases/:id/links', auth, need('senior', 'munshi', 'junior'), upLimit, wrap(async (q, s) => {
+  const c = await getCase(q, q.params.id); if (!c) return s.status(404).json({ error: 'Case nahi mila' });
+  const raw = str(q.body.url, 1000); let u;
+  try { u = new URL(raw); } catch { u = null; }
+  if (!u || u.protocol !== 'https:' || u.username || u.password || !u.hostname.includes('.')) return s.status(400).json({ error: 'Sirf https:// wala sahi link chalega' });
+  const warn = !GOOGLE_HOSTS.includes(u.hostname.toLowerCase());
+  const name = str(String(q.body.name || '').replace(/[\u0000-\u001f<>"]/g, '_'), 120) || u.hostname;
+  const { data, error } = await db.from('documents').insert({ chamber_id: c.chamber_id, case_id: c.id, name, mime: LINK_MIME, size: 0, path: 'link/' + crypto.randomUUID(),
+    backend: 'link', url: u.href, uploaded_by: q.user.id }).select(DF).single();
+  if (error) throw error;
+  s.json({ ...data, warn });
+}));
+async function docFor(q, id, f = 'id,case_id,name,mime,path,backend,url,drive_file_id,uploaded_by,chamber_id') {
+  if (!isId(id)) return null;
+  const { data: d } = await db.from('documents').select(f).eq('id', id).eq('chamber_id', q.user.chamber_id).maybeSingle();
+  if (!d || !(await getCase(q, d.case_id))) return null;
+  return d;
+}
+// Download: access check ke baad 60 second ka signed URL (Supabase / R2), link ke liye wahi link (naye tab mein),
+// Drive ke liye apne server ka 60 second wala token-link (server uploader ke token se file laata hai)
 app.get('/api/docs/:id/url', auth, dlLimit, wrap(async (q, s) => {
   if (!isId(q.params.id)) return s.status(400).json({ error: 'Galat request' });
-  const { data: d } = await db.from('documents').select('id,case_id,name,path').eq('id', q.params.id).eq('chamber_id', q.user.chamber_id).maybeSingle();
-  if (!d || !(await getCase(q, d.case_id))) return s.status(404).json({ error: 'Document nahi mila' });
-  const r = await db.storage.from(BUCKET).createSignedUrl(d.path, 60, { download: d.name });
-  if (r.error) throw r.error;
-  s.json({ url: r.data.signedUrl });
+  const d = await docFor(q, q.params.id); if (!d) return s.status(404).json({ error: 'Document nahi mila' });
+  const b = d.backend || 'supabase';
+  if (b === 'link') return s.json({ url: d.url, open: true });
+  if (b === 'gdrive') {
+    if (!drive.enabled) return s.status(503).json({ error: 'Google Drive abhi band hai' });
+    const t = jwt.sign({ p: 'dl', d: d.id, u: q.user.id }, JWT_SECRET, { algorithm: 'HS256', expiresIn: 60 });
+    return s.json({ url: `/api/docs/${d.id}/raw?t=${encodeURIComponent(t)}`, open: d.uploaded_by === q.user.id && !!d.url });
+  }
+  const be = store.get(b); if (!be) return s.status(503).json({ error: 'Ye file abhi nahi khul sakti (storage setting dekhein)' });
+  s.json({ url: await be.url(d.path, d.name) });
+}));
+// Drive file: token (60 s, isi user aur isi document ke liye) + dobara permission check. Uploader ko seedha Drive par (302).
+app.get('/api/docs/:id/raw', dlLimit, wrap(async (q, s) => {
+  if (!drive.enabled || !isId(q.params.id)) return s.status(404).json({ error: 'Document nahi mila' });
+  let p; try { p = jwt.verify(String(q.query.t || ''), JWT_SECRET, { algorithms: ['HS256'] }); } catch { return s.status(401).json({ error: 'Link purana ho gaya, dobara Download dabayein' }); }
+  if (!p || p.p !== 'dl' || p.d !== q.params.id || !isId(p.u)) return s.status(401).json({ error: 'Link purana ho gaya, dobara Download dabayein' });
+  const { data: u } = await db.from('users').select('id,role,chamber_id,name,active').eq('id', p.u).maybeSingle();
+  if (!u || !u.active) return s.status(401).json({ error: 'Account band hai' });
+  const { data: chm } = await db.from('chambers').select('active').eq('id', u.chamber_id).maybeSingle();
+  if (chm && chm.active === false) return s.status(401).json({ error: 'Chamber band hai. Support se baat karein' });
+  const d = await docFor({ user: u }, q.params.id);
+  if (!d || d.backend !== 'gdrive') return s.status(404).json({ error: 'Document nahi mila' });
+  if (d.uploaded_by === u.id && d.url && /^https:\/\/(drive|docs)\.google\.com\//.test(d.url)) return s.redirect(302, d.url);
+  const buf = await drive.fetchFile(d.uploaded_by, d.chamber_id, d.drive_file_id);
+  if (!buf) return s.status(410).json({ error: 'Drive se file nahi mil rahi (upload karne wale ne Drive hata di?)' });
+  s.set({ 'Content-Type': d.mime, 'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(d.name)}`, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' });
+  s.send(buf);
 }));
 app.delete('/api/docs/:id', auth, need('senior'), wrap(async (q, s) => {
   if (!isId(q.params.id)) return s.status(400).json({ error: 'Galat request' });
-  const { data: d } = await db.from('documents').select('id,path').eq('id', q.params.id).eq('chamber_id', q.user.chamber_id).maybeSingle();
+  const { data: d } = await db.from('documents').select('id,path,backend,drive_file_id,uploaded_by,chamber_id').eq('id', q.params.id).eq('chamber_id', q.user.chamber_id).maybeSingle();
   if (!d) return s.status(404).json({ error: 'Document nahi mila' });
-  const r = await db.storage.from(BUCKET).remove([d.path]); if (r.error) throw r.error;
+  const b = d.backend || 'supabase';
+  if (b === 'gdrive') { if (drive.enabled) { try { await drive.remove(d.uploaded_by, d.chamber_id, d.drive_file_id); } catch (e) { console.error(e.message); } } }
+  else if (b !== 'link') { const be = store.get(b); if (!be) return s.status(503).json({ error: 'Ye file abhi nahi khul sakti (storage setting dekhein)' }); await be.del(d.path); }
   ok(await db.from('documents').delete().eq('id', d.id).eq('chamber_id', q.user.chamber_id));
   s.json({ ok: 1 });
+}));
+
+// ---------- Google Drive jodein (har user apni) ----------
+const driveLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: 30, standardHeaders: true, legacyHeaders: false, message: { error: 'Bahut koshish ho gayi. 15 minute baad try karein' } });
+const cookie = (q, k) => { const m = String(q.headers.cookie || '').split(/;\s*/).find(x => x.startsWith(k + '=')); return m ? decodeURIComponent(m.slice(k.length + 1)) : ''; };
+const DCK = 'mcc_ds';
+const dcookie = (q, v, age) => `${DCK}=${v}; Path=/api/drive; HttpOnly; SameSite=Lax; Max-Age=${age}${q.secure ? '; Secure' : ''}`;
+const driveOn = (q, s, n) => drive.enabled ? n() : s.status(404).json({ error: 'Google Drive abhi band hai' });
+app.get('/api/drive/status', auth, need('senior', 'munshi', 'junior'), wrap(async (q, s) => {
+  if (!drive.enabled) return s.json({ enabled: false });
+  s.json({ enabled: true, ...(await drive.status(q.user)) });
+}));
+app.post('/api/drive/connect', auth, need('senior', 'munshi', 'junior'), driveOn, driveLimit, wrap(async (q, s) => {
+  const { state, nonce } = drive.makeState(q.user.id);
+  s.set('Set-Cookie', dcookie(q, nonce, 600)).json({ url: drive.authUrl(state) });
+}));
+// Google yahan wapas bhejta hai (browser redirect, Authorization header nahi): state ka HMAC + cookie ka nonce + user dobara check
+app.get('/api/drive/callback', driveOn, driveLimit, wrap(async (q, s) => {
+  const back = r => s.set('Set-Cookie', dcookie(q, '', 0)).redirect(302, '/?drive=' + r);
+  const uid = drive.readState(q.query.state, cookie(q, DCK));
+  if (!uid || !isId(uid)) return back('err');
+  if (q.query.error) return back('no');
+  if (typeof q.query.code !== 'string' || !q.query.code || q.query.code.length > 2000) return back('err');
+  const { data: u } = await db.from('users').select('id,role,chamber_id,active').eq('id', uid).maybeSingle();
+  if (!u || !u.active || !['senior', 'munshi', 'junior'].includes(u.role)) return back('err');
+  const { data: chm } = await db.from('chambers').select('active').eq('id', u.chamber_id).maybeSingle();
+  if (chm && chm.active === false) return back('err');
+  try { await drive.connect(u, q.query.code); } catch (e) { console.error(e.message); return back('err'); }
+  back('ok');
+}));
+app.post('/api/drive/disconnect', auth, need('senior', 'munshi', 'junior'), driveOn, wrap(async (q, s) => {
+  await drive.disconnect(q.user); s.json({ ok: 1 });
 }));
 
 // ---------- drafts (Vakalatnama, affidavit, bail wagairah) ----------
@@ -531,7 +624,7 @@ app.post('/api/fees', auth, need('senior', 'munshi'), wrap(async (q, s) => {
 app.get('/api/backup', auth, need('senior'), wrap(async (q, s) => {
   const ch = q.user.chamber_id, get = (t, f = '*') => all(() => db.from(t).select(f).eq('chamber_id', ch).order('id'));
   const [cases, fees, hearing_log, clients, tasks, notes, drafts, documents] = await Promise.all([get('cases'), get('fees'), get('hearing_log'), get('clients'), get('tasks'),
-    get('notes'), get('drafts'), get('documents', 'id,case_id,name,mime,size,path,created_at')]);
+    get('notes'), get('drafts'), get('documents', 'id,case_id,name,mime,size,path,backend,url,drive_file_id,uploaded_by,created_at')]);
   s.json({ exported_at: new Date().toISOString(), version: 5, cases, fees, hearing_log, clients, tasks, notes, drafts, documents });
 }));
 
@@ -543,7 +636,7 @@ app.use((e, q, s, n) => {
 });
 
 if (require.main === module) {
-  ensureBucket();
+  store.current.ensure();
   app.listen(process.env.PORT || 10000, () => console.log('Malda Court Connect v5 chalu hai'));
 }
 module.exports = app;

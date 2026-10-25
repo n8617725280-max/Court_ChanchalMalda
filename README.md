@@ -4,7 +4,7 @@ Case diary, next date, fees ledger aur backup. Laptop aur mobile dono par chalta
 
 ## Files (sab ek hi jagah; sirf backup.yml `.github/workflows/` folder mein)
 ```
-server.js  package.json  supabase.sql  update-3.sql  .env.example  .gitignore  README.md  BACKUP.md
+server.js  storage.js  drive.js  package.json  supabase.sql  update-3.sql  update-4.sql  .env.example  .gitignore  README.md  BACKUP.md
 index.html  app.js  app.css  sw.js  qr.js  law-sections.json  manifest.json  icon-192.png  icon-512.png
 setup.html  setup.js  owner.html  owner.js
 .github/workflows/backup.yml
@@ -92,3 +92,87 @@ Owner Panel: /owner.html (Setup key se khulta hai). Chamber banana/band karna, k
    - Koi error aaye to Render Logs ka screenshot lein aur support: 7602292599.
 
 Dhyan dein: Supabase free plan mein 1 GB file storage hai. Dashboard par "Documents ki jagah" dekhte rahein. Badi photo ki jagah PDF scan (kam MB) behtar hai.
+
+
+## Update 4 (v5.1): kam jagah, zyada vakil (100-200 advocates)
+Naya kya hai:
+1. **Photo apne aap chhoti**: upload se pehle phone/computer hi photo ko 1600px aur JPEG (quality 0.75) bana deta hai. 4 MB ki photo lagbhag 0.3-0.5 MB. PDF waise hi jaati hai. Upload ke baad "Photo chhoti ki: 1.7 MB → 358 KB" dikhta hai. Server limit 10 MB hi hai.
+2. **Case > Documents mein bade button**: "📷 Photo/PDF daalein" (phone par camera ya file, dono), "🔗 Link chipkayein", aur (agar setup kiya hai) "Google Drive jodein (ek baar)". Judne ke baad "✓ Drive judi hai (email)".
+3. **Link chipkayein**: Google Drive mein pehle se padi file ka link case mein jod dein. App ki koi jagah nahi lagti. Sirf `https://` link; drive.google.com / docs.google.com ke alawa koi aur site ho to app chetavni deta hai.
+4. **Google Drive jodein**: har vakil/munshi/junior apni Google Drive ek baar jod sakta hai. Phir uski upload ki files uski Drive mein "Court Connect/<case no>" folder mein jaati hain. Team aur client app se hi file khol lete hain (server uploader ki taraf se file laata hai), Drive share karne ki zaroorat nahi.
+5. **Cloudflare R2 (10 GB free)** ka option, jab Supabase ka 1 GB bharne lage.
+6. **Dashboard tile**: "Documents ki jagah" ab backend ke hisaab se: Supabase 1 GB ya R2 10 GB, kitna % bhara. 80% par laal. (Drive aur link ginti mein nahi aate, kyunki wo app ki jagah nahi lete.)
+7. `/healthz` (Render ko jagaye rakhne ke liye).
+
+### Update 4 kaise upload karein
+1. **Pehle Supabase**: SQL Editor > New query > `update-4.sql` ka poora text paste > **Run**. Ye documents table mein `backend`, `url`, `drive_file_id` column jodta hai, purani sab files ko `supabase` maanta hai, aur `drive_tokens` table banata hai (RLS ON, anon/authenticated ke liye band). Dobara chalana safe hai, koi data delete nahi hota.
+   (Bilkul naya project ho to pehle `supabase.sql`, phir `update-4.sql`.)
+2. **Phir GitHub**: ye files upload/replace karein: `server.js`, `storage.js` (naya), `drive.js` (naya), `app.js`, `app.css`, `sw.js`, `package.json`, `update-4.sql` (naya), `README.md`, `.env.example`. Koi naya npm package nahi hai.
+3. Render apne aap deploy karega. Koi naya env variable zaroori nahi: bina kuch daale app pehle jaisa Supabase par chalta hai, Drive button chhupa rehta hai.
+4. App ek baar refresh karein (cache `mcc-v8`).
+
+### Naye environment variables (sab optional)
+| Variable | Kab | Kya |
+|---|---|---|
+| `STORAGE` | R2 chalu karne par | `r2` (khaali/`supabase` = purana tareeka) |
+| `R2_ACCOUNT_ID` | R2 | Cloudflare account ID |
+| `R2_ACCESS_KEY_ID` | R2 | R2 API token ki Access Key ID |
+| `R2_SECRET_ACCESS_KEY` | R2 | R2 API token ki Secret Access Key (SECRET) |
+| `R2_BUCKET` | R2 | bucket ka naam, jaise `court-docs` |
+| `GOOGLE_CLIENT_ID` | Drive | Google OAuth Client ID |
+| `GOOGLE_CLIENT_SECRET` | Drive | Google OAuth Client secret (SECRET) |
+| `GOOGLE_REDIRECT_URI` | Drive | `https://court-chanchalmalda.onrender.com/api/drive/callback` |
+| `DRIVE_TOKEN_KEY` | Drive | 32+ random akshar; isi se Drive tokens encrypt hote hain. Ek baar rakh kar mat badlein (badla to sabko Drive dobara jodni padegi) |
+
+Chaaron `GOOGLE_*`/`DRIVE_TOKEN_KEY` mein se ek bhi na ho to Drive wala feature poora chhupa rehta hai. `STORAGE=r2` ho aur R2 ka koi variable chhoot jaye to server start hi nahi hoga (Logs mein saaf likha aayega).
+`DRIVE_TOKEN_KEY` banane ke liye: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+
+## Render ko jagaye rakhein
+Free Render 15 minute bina request ke so jaata hai, phir pehli baar khulne mein 30-60 second lagte hain. Isliye har 10 minute ek "ping":
+1. https://cron-job.org par free account banayein (email se).
+2. **Create cronjob** > Title: `Court Connect jagao`.
+3. URL: `https://court-chanchalmalda.onrender.com/healthz`
+4. Schedule: **Every 10 minutes**. Save.
+5. Test: browser mein wahi URL kholein, `{"ok":true}` dikhna chahiye. `/healthz` na login maangta hai na database chhoota hai, isliye bilkul halka hai.
+
+Render free plan mein har mahine 750 instance hours milte hain. Ek service poore mahine (31 din x 24 = 744 ghante) chale to bhi isme aa jaati hai. Dhyan: isi account mein doosri free service bhi jagaye rakhi to 750 ghante kam padenge.
+
+## R2 kab aur kaise chalu karein
+**Kab**: jab Dashboard par "Documents ki jagah" 70-80% (Supabase 1 GB) ke paas pahunche. R2 mein 10 GB free hai aur download (egress) ka paisa nahi lagta.
+**Pehle jaan lein**: Cloudflare R2 chalu karne ke liye card (debit/credit) dena padta hai. Kuch logon ne bataya hai ki card verify karte waqt lagbhag $5 ka temporary authorization hold aata hai jo baad mein wapas ho jaata hai. Free limit (10 GB, 10 lakh write, 1 crore read har mahine) ke andar raho to bill nahi aata; Cloudflare dashboard mein usage dekhte rahein.
+
+Steps:
+1. dash.cloudflare.com par account > left menu **R2 Object Storage** > card daal kar R2 chalu karein.
+2. **Create bucket** > naam jaise `court-docs` > Location Automatic > Create. Bucket **public NA karein** (koi custom domain / public access nahi chahiye; app 60 second ke signed link deta hai).
+3. R2 page par **Manage R2 API Tokens** (ya "API" > Manage API tokens) > **Create API token**:
+   - Permissions: **Object Read & Write**
+   - Specify bucket: sirf `court-docs`
+   - TTL: Forever (ya apni marzi) > Create.
+   - Dikhne wali **Access Key ID** aur **Secret Access Key** turant copy kar lein (secret dobara nahi dikhega). Account ID R2 page ke right side par hota hai.
+4. Render > service > **Environment** mein daalein: `STORAGE=r2`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET=court-docs` > Save (Render redeploy karega).
+5. `update-4.sql` pehle hi Run kar chuke hain na? Nahi to abhi Run karein (zaroori hai).
+6. Test: ek case mein chhoti PDF upload > Download. Cloudflare R2 bucket mein `<chamber>/<case>/...pdf` dikhegi.
+
+**Purani files**: jo files Supabase mein hain wo wahin rahengi aur waise hi download/delete hongi (har file ke saath likha hai wo kahan hai). Sirf nayi files R2 mein jayengi. Wapas Supabase par aana ho to `STORAGE` hata dein; R2 wali files tab bhi khulengi jab tak R2 ke variable lage hain.
+
+## Google Drive jodna: Google Cloud setup (sirf aap, ek baar)
+1. https://console.cloud.google.com par apne Gmail se login > upar project list > **New project** > naam `Court Connect` > Create.
+2. **APIs & Services > Library** > "Google Drive API" khojein > **Enable**.
+3. **APIs & Services > OAuth consent screen** (naye console mein "Google Auth Platform"):
+   - User type: **External** > Create.
+   - App name `Malda Court Connect`, support email (aapka), developer contact email (aapka). App domain/homepage mein `https://court-chanchalmalda.onrender.com` daal sakte hain.
+   - **Scopes / Data access** > Add scope > `https://www.googleapis.com/auth/drive.file` (".../auth/drive.file — See, edit, create and delete only the specific Google Drive files you use with this app") > Save. Koi aur scope NA jodein.
+   - **Test users** > Add users: jin vakilon/munshiyon ko abhi chalana hai unke Gmail (Testing mein max 100 log).
+4. **Publishing / verification**:
+   - "Testing" mein sirf test users jod sakte hain, aur Google **7 din baad token khatam** kar deta hai: tab app khud "Google Drive jodein (ek baar)" dobara dikhayega (us beech ki uploads app storage mein jayengi). Isliye trial ke baad **Publish app > In production** kar dein.
+   - `drive.file` "non-sensitive" scope hai, isliye aam taur par Google ka lamba verification nahi lagta. Agar logo ya brand dikhana ho to Google brand verification maang sakta hai (privacy policy page ka link wagairah). Jab tak verify na ho, Allow screen par app ka naam/email dikhega, ye normal hai.
+5. **APIs & Services > Credentials > Create credentials > OAuth client ID**:
+   - Application type: **Web application**, naam `Court Connect web`.
+   - **Authorized redirect URIs** > Add URI: `https://court-chanchalmalda.onrender.com/api/drive/callback` (bilkul yahi, `https` ke saath, aakhir mein `/` nahi).
+   - Create > **Client ID** aur **Client secret** copy karein.
+6. Render > Environment mein daalein: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI=https://court-chanchalmalda.onrender.com/api/drive/callback`, `DRIVE_TOKEN_KEY` (32+ random akshar) > Save.
+7. `update-4.sql` Run kiya ho (drive_tokens table). Test: senior login > koi case > Documents > "Google Drive jodein (ek baar)" > Gmail chunein > Allow > wapas app mein "Google Drive jud gayi". Photo daalein, phir apni Drive mein "Court Connect" folder dekhein.
+
+**Suraksha**: app sirf `drive.file` maangta hai, yaani sirf wahi files dekh/bana sakta hai jo app ne khud banayi. Vakil ki baaki Drive app ko nahi dikhti. Refresh token server par AES-256-GCM se encrypt hokar rakha jaata hai. "Drive hatayein" dabane par Google se token revoke hota hai aur row delete. Kisi ne Drive hata di ho to uski upload ki Drive files app se nahi khulengi (Drive mein unke paas surakshit rahengi); wahi Gmail dobara jodne par phir khulne lagti hain.
+
+**Vakil ko kya batana hai**: "Kisi bhi case > Documents > Google Drive jodein (ek baar) > apna Gmail chunein > Allow." Phone aur computer dono par yahi. Bas.
