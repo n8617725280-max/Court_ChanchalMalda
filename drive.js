@@ -1,4 +1,4 @@
-// Malda Court Connect — Google Drive (har user apni Drive jodta hai). Server-side only; PAGES list mein NAHI.
+// Court Connect — Google Drive (har user apni Drive jodta hai). Server-side only; PAGES list mein NAHI.
 // OAuth 2.0 authorization code flow, scope sirf drive.file (app sirf apni banayi files dekh sakta hai).
 // Refresh token AES-256-GCM se encrypt hokar drive_tokens table mein; access token sirf memory mein.
 const crypto = require('crypto');

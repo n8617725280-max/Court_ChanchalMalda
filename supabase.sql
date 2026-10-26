@@ -191,3 +191,11 @@ values ('case-docs', 'case-docs', false, 10485760, array['application/pdf','imag
 on conflict (id) do update set public = false;
 
 -- 10) Iske baad update-4.sql bhi Run karein (storage backend, link, Google Drive tokens).
+
+alter table cases add column if not exists case_refs jsonb not null default '[]'::jsonb;
+
+-- Supabase 30 Oct 2026 badlav: nayi tables ko server (service_role) ke liye saaf GRANT chahiye.
+-- anon/authenticated ko kuch nahi milta; app sirf server se data padhta hai.
+grant usage on schema public to service_role;
+grant select, insert, update, delete on chambers, users, cases, fees, hearing_log, tasks, clients, documents, drafts, notes to service_role;
+grant usage, select on all sequences in schema public to service_role;

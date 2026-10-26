@@ -106,3 +106,9 @@ revoke all on clients, documents, drafts, notes from anon, authenticated;
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('case-docs', 'case-docs', false, 10485760, array['application/pdf','image/jpeg','image/png'])
 on conflict (id) do update set public = false;
+
+-- Supabase 30 Oct 2026 badlav: nayi tables ko server (service_role) ke liye saaf GRANT chahiye.
+-- anon/authenticated ko kuch nahi milta; app sirf server se data padhta hai.
+grant usage on schema public to service_role;
+grant select, insert, update, delete on clients, documents, drafts, notes to service_role;
+grant usage, select on all sequences in schema public to service_role;

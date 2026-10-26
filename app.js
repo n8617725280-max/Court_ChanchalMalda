@@ -1,5 +1,5 @@
 'use strict';
-// Malda Court Connect v5 — frontend (plain JS, koi framework/build nahi)
+// Court Connect v5 — frontend (plain JS, koi framework/build nahi)
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const iso = d => new Date(d - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
@@ -260,7 +260,7 @@ Object.assign(D, {
   hint_reset: ['Chhupaye hue hint wapas dikhayein', 'Show hidden hints again', 'লুকানো টিপস আবার দেখান', 'छिपाए हुए संकेत फिर दिखाएँ'],
   hint_hide: ['Chhupayein', 'Hide', 'লুকান', 'छिपाएँ'],
   // swagat
-  wl_h: ['Malda Court Connect mein swagat', 'Welcome to Malda Court Connect', 'Malda Court Connect-এ স্বাগত', 'Malda Court Connect में स्वागत है'],
+  wl_h: ['Court Connect mein swagat', 'Welcome to Court Connect', 'Court Connect-এ স্বাগত', 'Court Connect में स्वागत है'],
   wl_sub: ['Aapke chamber ka case diary, fees aur team, sab ek jagah.', "Your chamber's case diary, fees and team, all in one place.", 'আপনার চেম্বারের কেস ডায়েরি, ফি আর টিম, সব এক জায়গায়।', 'आपके चैंबर की केस डायरी, फ़ीस और टीम, सब एक जगह।'],
   wb1: ['Agli date kabhi na chhoote: aaj, kal aur nikli hui date ek nazar mein', 'Never miss a date: today, tomorrow and overdue at a glance', 'কোনো তারিখ মিস হবে না: আজ, কাল আর পেরোনো তারিখ এক নজরে', 'अगली तारीख कभी न छूटे: आज, कल और निकली हुई तारीख एक नज़र में'],
   wb2: ['Fees ka pakka hisaab, receipt aur UPI QR turant', 'Clear fee accounts, with instant receipts and UPI QR', 'ফি-র পাকা হিসাব, সঙ্গে সঙ্গে রসিদ ও UPI QR', 'फ़ीस का पक्का हिसाब, रसीद और UPI QR तुरंत'],
@@ -467,18 +467,79 @@ Object.assign(HE, {
   'Drive se file nahi mil rahi (upload karne wale ne Drive hata di?)': 'Drive से फ़ाइल नहीं मिल रही (अपलोड करने वाले ने Drive हटा दी?)'
 });
 
+// ---------- v5.2: eCourts (official web/app + eCourtsIndia live status) — 4 bhasha [Hinglish, English, বাংলা, हिन्दी] ----------
+Object.assign(D, {
+  cnr_copied: ['CNR copy ho gaya — eCourts site par CNR box mein paste karein, phir CAPTCHA bharein.', 'CNR copied — paste it in the CNR box on the eCourts site, then fill the CAPTCHA.', 'CNR কপি হয়েছে — eCourts সাইটে CNR বক্সে পেস্ট করুন, তারপর CAPTCHA দিন।', 'CNR कॉपी हो गया — eCourts साइट पर CNR बॉक्स में पेस्ट करें, फिर CAPTCHA भरें।'],
+  ref_h: ['Case Ref', 'Case references', 'কেস রেফারেন্স', 'केस रेफ़रेंस'],
+  ref_none: ['Abhi koi ref nahi. Judgment ka hawala ya juda hua case jodein.', 'No references yet. Add a judgment citation or a linked case.', 'এখনও কোনো রেফারেন্স নেই। রায়ের উদ্ধৃতি বা যুক্ত কেস যোগ করুন।', 'अभी कोई रेफ़रेंस नहीं। फ़ैसले का हवाला या जुड़ा केस जोड़ें।'],
+  ref_law: ['Judgment', 'Judgment', 'রায়', 'फ़ैसला'],
+  ref_case: ['Juda case', 'Linked case', 'যুক্ত কেস', 'जुड़ा केस'],
+  ref_addlaw: ['+ Judgment ka hawala', '+ Judgment citation', '+ রায়ের উদ্ধৃতি', '+ फ़ैसले का हवाला'],
+  ref_addcase: ['+ Juda case', '+ Linked case', '+ যুক্ত কেস', '+ जुड़ा केस'],
+  ref_cite_law: ['Citation, jaise (2014) 8 SCC 273', 'Citation, e.g. (2014) 8 SCC 273', 'উদ্ধৃতি, যেমন (2014) 8 SCC 273', 'हवाला, जैसे (2014) 8 SCC 273'],
+  ref_title_law: ['Case ka naam, jaise Arnesh Kumar vs State of Bihar', 'Case name, e.g. Arnesh Kumar vs State of Bihar', 'কেসের নাম, যেমন Arnesh Kumar vs State of Bihar', 'केस का नाम, जैसे Arnesh Kumar vs State of Bihar'],
+  ref_note_law: ['Kis baat ke liye (jaise: 7 saal tak ki saza mein arrest nahi)', 'Point it supports (e.g. no arrest for offences up to 7 years)', 'কোন বিষয়ে (যেমন: ৭ বছর পর্যন্ত সাজায় গ্রেপ্তার নয়)', 'किस बात के लिए (जैसे: 7 साल तक की सज़ा में गिरफ़्तारी नहीं)'],
+  ref_cite_case: ['Case number, jaise Bail Misc 120/2026 ya CNR', 'Case number, e.g. Bail Misc 120/2026 or CNR', 'কেস নম্বর, যেমন Bail Misc 120/2026 বা CNR', 'केस नंबर, जैसे Bail Misc 120/2026 या CNR'],
+  ref_title_case: ['Court, jaise Sessions Court Malda ya Calcutta High Court', 'Court, e.g. Sessions Court Malda or Calcutta High Court', 'আদালত, যেমন Sessions Court Malda বা Calcutta High Court', 'कोर्ट, जैसे Sessions Court Malda या Calcutta High Court'],
+  ref_note_case: ['Rishta / note (jaise: isi FIR ki bail, appeal, transfer)', 'Relation / note (e.g. bail in same FIR, appeal, transfer)', 'সম্পর্ক / নোট (যেমন: একই FIR-এর জামিন, আপিল)', 'रिश्ता / नोट (जैसे: इसी FIR की बेल, अपील, ट्रांसफ़र)'],
+  ref_copy: ['Copy', 'Copy', 'কপি', 'कॉपी'],
+  ref_copied: ['Ref copy ho gaya, draft mein paste karein', 'Reference copied, paste it in your draft', 'রেফারেন্স কপি হয়েছে, ড্রাফটে পেস্ট করুন', 'रेफ़रेंस कॉपी हो गया, ड्राफ़्ट में पेस्ट करें'],
+  ref_del_q: ['Yeh ref hatayein?', 'Remove this reference?', 'এই রেফারেন্স সরাবেন?', 'यह रेफ़रेंस हटाएँ?'],
+  ref_net: ['Ref jodne ke liye internet chahiye', 'Internet needed to add references', 'রেফারেন্স যোগ করতে ইন্টারনেট দরকার', 'रेफ़रेंस जोड़ने के लिए इंटरनेट चाहिए'],
+  ec_app: ['eCourts App mein kholein', 'Open in eCourts App', 'eCourts অ্যাপে খুলুন', 'eCourts ऐप में खोलें'],
+  ec_app_copied: ["CNR copy ho gaya — app mein 'Search by CNR' pe paste karein", "CNR copied — paste it under 'Search by CNR' in the app", "CNR কপি হয়েছে — অ্যাপে 'Search by CNR'-এ পেস্ট করুন", "CNR कॉपी हो गया — ऐप में 'Search by CNR' पर पेस्ट करें"],
+  ec_live: ['Live status dekhein', 'See live status', 'লাইভ স্ট্যাটাস দেখুন', 'लाइव स्टेटस देखें'],
+  ec_h: ['Live status (eCourtsIndia)', 'Live status (eCourtsIndia)', 'লাইভ স্ট্যাটাস (eCourtsIndia)', 'लाइव स्टेटस (eCourtsIndia)'],
+  ec_status: ['Status', 'Status', 'অবস্থা', 'स्थिति'], ec_next: ['Agli date (eCourts)', 'Next date (eCourts)', 'পরবর্তী তারিখ (eCourts)', 'अगली तारीख (eCourts)'],
+  ec_judge: ['Judge', 'Judge', 'বিচারক', 'जज'], ec_parties: ['Petitioner v Respondent', 'Petitioner v Respondent', 'আবেদনকারী বনাম প্রতিপক্ষ', 'याचिकाकर्ता बनाम प्रतिवादी'],
+  ec_dec: ['Faisle ki date', 'Decision date', 'রায়ের তারিখ', 'फ़ैसले की तारीख'],
+  ec_hear: ['Pichhli sunwaiyan', 'Last hearings', 'আগের শুনানি', 'पिछली सुनवाइयाँ'],
+  ec_orders: ['Orders ({0})', 'Orders ({0})', 'অর্ডার ({0})', 'ऑर्डर ({0})'], ec_noorder: ['Koi order nahi', 'No orders', 'কোনো অর্ডার নেই', 'कोई ऑर्डर नहीं'],
+  ec_fetched: ['Abhi laaya gaya: {0}', 'Fetched: {0}', 'এখন আনা হলো: {0}', 'अभी लाया गया: {0}'],
+  ec_cached: ['Pichhli baar laaya gaya: {0} (12 ghante tak dobara free)', 'Fetched earlier: {0} (free again for 12 hours)', 'আগে আনা হয়েছিল: {0} (১২ ঘণ্টা পর্যন্ত আবার ফ্রি)', 'पिछली बार लाया गया: {0} (12 घंटे तक दोबारा फ़्री)'],
+  ec_src: ['Source: eCourtsIndia (private service) — official eCourts par zaroor milayein', 'Source: eCourtsIndia (private service) — verify on official eCourts', 'সূত্র: eCourtsIndia (বেসরকারি পরিষেবা) — অফিসিয়াল eCourts-এ মিলিয়ে নিন', 'स्रोत: eCourtsIndia (निजी सेवा) — आधिकारिक eCourts पर ज़रूर मिलाएँ'],
+  ec_differs: ['eCourts par agli date {0} hai, app mein {1}.', 'eCourts shows next date {0}; the app has {1}.', 'eCourts-এ পরবর্তী তারিখ {0}, অ্যাপে {1}।', 'eCourts पर अगली तारीख {0} है, ऐप में {1}।'],
+  ec_upd: ['Next date update karein', 'Update next date', 'পরবর্তী তারিখ আপডেট করুন', 'अगली तारीख अपडेट करें'],
+  ec_upd_ok: ['Next date update ho gayi', 'Next date updated', 'পরবর্তী তারিখ আপডেট হয়েছে', 'अगली तारीख अपडेट हो गई'],
+  ec_force: ['Abhi refresh karein', 'Refresh now', 'এখনই রিফ্রেশ করুন', 'अभी रिफ़्रेश करें'],
+  ec_force_n: ['Refresh mein kuch minute lagte hain; naya data thodi der baad dobara "Live status dekhein" se aayega. (~₹1.65 kharch)', 'A refresh takes a few minutes; tap "See live status" again a little later for new data. (~₹1.65 cost)', 'রিফ্রেশে কয়েক মিনিট লাগে; নতুন তথ্যের জন্য একটু পরে আবার "লাইভ স্ট্যাটাস দেখুন" চাপুন। (~₹১.৬৫ খরচ)', 'रिफ़्रेश में कुछ मिनट लगते हैं; नया डेटा थोड़ी देर बाद दोबारा "लाइव स्टेटस देखें" से आएगा। (~₹1.65 ख़र्च)'],
+  ec_queued: ['Refresh line mein hai — kuch minute baad dobara dekhein.', 'Refresh is queued — check again in a few minutes.', 'রিফ্রেশ লাইনে আছে — কয়েক মিনিট পরে আবার দেখুন।', 'रिफ़्रेश लाइन में है — कुछ मिनट बाद दोबारा देखें।'],
+  ec_retry: ['Dobara try karein', 'Try again', 'আবার চেষ্টা করুন', 'दोबारा कोशिश करें'],
+  ecx_off: ['Live status abhi band hai', 'Live status is not available right now', 'লাইভ স্ট্যাটাস এখন বন্ধ', 'लाइव स्टेटस अभी बंद है'],
+  ecx_no_key: ['eCourtsIndia key galat ya maujood nahi (Render mein ECOURTSINDIA_KEY dekhein)', 'eCourtsIndia key is wrong or missing (check ECOURTSINDIA_KEY on Render)', 'eCourtsIndia কী ভুল বা নেই (Render-এ ECOURTSINDIA_KEY দেখুন)', 'eCourtsIndia key ग़लत या मौजूद नहीं (Render में ECOURTSINDIA_KEY देखें)'],
+  ecx_no_credit: ['eCourtsIndia mein credit khatam ho gaya. Recharge karein', 'eCourtsIndia credit has run out. Please recharge', 'eCourtsIndia-তে ক্রেডিট শেষ। রিচার্জ করুন', 'eCourtsIndia में क्रेडिट ख़त्म हो गया। रिचार्ज करें'],
+  ecx_bad_cnr: ['CNR galat hai (16 akshar, jaise WBMD030004122026)', 'Invalid CNR (16 characters, e.g. WBMD030004122026)', 'CNR ভুল (১৬ অক্ষর, যেমন WBMD030004122026)', 'CNR ग़लत है (16 अक्षर, जैसे WBMD030004122026)'],
+  ecx_not_found: ['Is CNR ka case eCourtsIndia par nahi mila', 'No case with this CNR was found on eCourtsIndia', 'এই CNR-এর কেস eCourtsIndia-তে পাওয়া যায়নি', 'इस CNR का केस eCourtsIndia पर नहीं मिला'],
+  ecx_rate_limit: ['eCourtsIndia abhi busy hai, thodi der baad try karein', 'eCourtsIndia is busy, try again a little later', 'eCourtsIndia এখন ব্যস্ত, একটু পরে চেষ্টা করুন', 'eCourtsIndia अभी व्यस्त है, थोड़ी देर बाद कोशिश करें'],
+  ecx_daily_limit: ['Aaj ki live status seema poori ho gayi. Kal try karein', "Today's live status limit is used up. Try tomorrow", 'আজকের লাইভ স্ট্যাটাস সীমা শেষ। কাল চেষ্টা করুন', 'आज की लाइव स्टेटस सीमा पूरी हो गई। कल कोशिश करें'],
+  ecx_timeout: ['eCourtsIndia se jawab nahi aaya, dobara try karein', 'eCourtsIndia did not respond, try again', 'eCourtsIndia থেকে উত্তর আসেনি, আবার চেষ্টা করুন', 'eCourtsIndia से जवाब नहीं आया, दोबारा कोशिश करें'],
+  ecx_upstream: ['eCourtsIndia se data nahi mila, baad mein try karein', 'Could not get data from eCourtsIndia, try later', 'eCourtsIndia থেকে তথ্য পাওয়া যায়নি, পরে চেষ্টা করুন', 'eCourtsIndia से डेटा नहीं मिला, बाद में कोशिश करें'],
+  ecx_forbidden: ['Is kaam ki ijazat nahi hai', 'You are not allowed to do this', 'এই কাজের অনুমতি নেই', 'इस काम की इजाज़त नहीं है'],
+  // Madad / Guide
+  g_cases_5: ['"eCourts App mein kholein": CNR copy hota hai aur eCourts Services app khulta hai (Android). App mein "Search by CNR" par paste karein — app khud nahi bharta. Free hai, key nahi chahiye.', '"Open in eCourts App": copies the CNR and opens the eCourts Services app (Android). Paste it under "Search by CNR" in the app — it does not fill in by itself. Free, no key needed.', '"eCourts অ্যাপে খুলুন": CNR কপি হয় আর eCourts Services অ্যাপ খোলে (Android)। অ্যাপে "Search by CNR"-এ পেস্ট করুন — অ্যাপ নিজে ভরে না। ফ্রি, কী লাগে না।', '"eCourts ऐप में खोलें": CNR कॉपी होता है और eCourts Services ऐप खुलता है (Android)। ऐप में "Search by CNR" पर पेस्ट करें — ऐप खुद नहीं भरता। फ़्री है, key नहीं चाहिए।'],
+  g_mine_4: ['Case mein CNR ho to "eCourts App mein kholein" dabayein: CNR copy hoga, app mein "Search by CNR" par paste karein.', 'If the case has a CNR, tap "Open in eCourts App": the CNR is copied; paste it under "Search by CNR" in the app.', 'কেসে CNR থাকলে "eCourts অ্যাপে খুলুন" চাপুন: CNR কপি হবে, অ্যাপে "Search by CNR"-এ পেস্ট করুন।', 'केस में CNR हो तो "eCourts ऐप में खोलें" दबाएँ: CNR कॉपी होगा, ऐप में "Search by CNR" पर पेस्ट करें।'],
+  g_ecourts_d: ['CNR wale case ki taaza jaankari (status, agli date, judge, orders) seedhe app mein. Har nayi khoj ~₹1.50 (eCourtsIndia credit se); 12 ghante tak wahi case dobara dekhna free hai.', 'Fresh details for a case with a CNR (status, next date, judge, orders) right in the app. Each fresh lookup costs ~₹1.50 (eCourtsIndia credit); viewing the same case again within 12 hours is free.', 'CNR থাকা কেসের টাটকা তথ্য (অবস্থা, পরবর্তী তারিখ, বিচারক, অর্ডার) সোজা অ্যাপে। প্রতিটি নতুন খোঁজ ~₹১.৫০ (eCourtsIndia ক্রেডিট থেকে); ১২ ঘণ্টার মধ্যে একই কেস আবার দেখা ফ্রি।', 'CNR वाले केस की ताज़ा जानकारी (स्थिति, अगली तारीख, जज, ऑर्डर) सीधे ऐप में। हर नई खोज ~₹1.50 (eCourtsIndia क्रेडिट से); 12 घंटे तक वही केस दोबारा देखना फ़्री है।'],
+  g_ecourts_1: ['Case "Kholein" > "Live status dekhein" dabayein (case mein CNR hona chahiye).', 'Open a case > tap "See live status" (the case needs a CNR).', 'কেস "খুলুন" > "লাইভ স্ট্যাটাস দেখুন" চাপুন (কেসে CNR থাকতে হবে)।', 'केस "खोलें" > "लाइव स्टेटस देखें" दबाएँ (केस में CNR होना चाहिए)।'],
+  g_ecourts_2: ['Status, agli date, court, judge, parties, pichhli sunwaiyan aur orders ki list dikhegi.', 'You will see status, next date, court, judge, parties, last hearings and the order list.', 'অবস্থা, পরবর্তী তারিখ, আদালত, বিচারক, পক্ষ, আগের শুনানি আর অর্ডারের তালিকা দেখাবে।', 'स्थिति, अगली तारीख, कोर्ट, जज, पक्षकार, पिछली सुनवाइयाँ और ऑर्डर की सूची दिखेगी।'],
+  g_ecourts_3: ['eCourts ki date app se alag ho to "Next date update karein" dabayein.', 'If the eCourts date differs from the app, tap "Update next date".', 'eCourts-এর তারিখ অ্যাপের থেকে আলাদা হলে "পরবর্তী তারিখ আপডেট করুন" চাপুন।', 'eCourts की तारीख ऐप से अलग हो तो "अगली तारीख अपडेट करें" दबाएँ।'],
+  g_ecourts_4: ['Senior "Abhi refresh karein" se court se naya data mangwa sakte hain (~₹1.65, kuch minute lagte hain).', 'Seniors can tap "Refresh now" to pull new data from the court (~₹1.65, takes a few minutes).', 'সিনিয়র "এখনই রিফ্রেশ করুন" দিয়ে আদালত থেকে নতুন তথ্য আনাতে পারেন (~₹১.৬৫, কয়েক মিনিট লাগে)।', 'सीनियर "अभी रिफ़्रेश करें" से कोर्ट से नया डेटा मँगवा सकते हैं (~₹1.65, कुछ मिनट लगते हैं)।'],
+  g_ecourts_5: ['Ye data eCourtsIndia (private service) se hai. Zaroori kaam se pehle official eCourts par milayein.', 'This data comes from eCourtsIndia (a private service). Verify on official eCourts before anything important.', 'এই তথ্য eCourtsIndia (বেসরকারি পরিষেবা) থেকে। জরুরি কাজের আগে অফিসিয়াল eCourts-এ মিলিয়ে নিন।', 'यह डेटा eCourtsIndia (निजी सेवा) से है। ज़रूरी काम से पहले आधिकारिक eCourts पर मिलाएँ।'],
+  g_ecourts_6: ['Free tareeka bhi hai: "eCourts App mein kholein" CNR copy karke eCourts Services app kholta hai; wahan "Search by CNR" mein paste karein.', 'There is a free way too: "Open in eCourts App" copies the CNR and opens the eCourts Services app; paste it under "Search by CNR".', 'ফ্রি উপায়ও আছে: "eCourts অ্যাপে খুলুন" CNR কপি করে eCourts Services অ্যাপ খোলে; সেখানে "Search by CNR"-এ পেস্ট করুন।', 'फ़्री तरीका भी है: "eCourts ऐप में खोलें" CNR कॉपी करके eCourts Services ऐप खोलता है; वहाँ "Search by CNR" में पेस्ट करें।']
+});
+
 // r = kaun dekhe: S senior, M munshi, J junior, C client. s = steps [number ya [key, roles]]
 const GUIDE = [
   { id: 'dash', t: 'tab_dash', go: 'dash', r: 'SMJ', s: [1, 2, [3, 'SM']] },
   { id: 'cal', t: 'tab_cal', go: 'cal', r: 'SMJ', s: [1, 2, 3] },
-  { id: 'cases', t: 'tab_cases', go: 'cases', r: 'SMJ', s: [[1, 'SM'], 2, [3, 'SM'], 4] },
-  { id: 'mine', ic: 'cases', t: 'tab_mine', go: 'cases', r: 'C', s: [1, 2, 3] },
+  { id: 'cases', t: 'tab_cases', go: 'cases', r: 'SMJ', s: [[1, 'SM'], 2, [3, 'SM'], 4, 5] },
+  { id: 'mine', ic: 'cases', t: 'tab_mine', go: 'cases', r: 'C', s: [1, 2, 4, 3] },
   { id: 'clients', t: 'tab_clients', go: 'clients', r: 'SM', s: [1, 2, 3] },
   { id: 'tasks', t: 'tab_tasks', go: 'tasks', r: 'SMJ', s: [[1, 'SM'], 2, 3] },
   { id: 'fees', t: 'g_fees_t', go: 'fees', r: 'SM', s: [1, 2, 3, 4] },
   { id: 'docs', t: 'docs', go: 'cases', r: 'SMJC', s: [[1, 'SMJ'], ['1c', 'C'], [4, 'SMJ'], 2, 3] },
   { id: 'link', ic: 'docs', t: 'lk_h', go: 'cases', r: 'SMJ', s: [1, 2, 3, 4] },
   { id: 'gdrive', ic: 'docs', t: 'gd_t', go: 'cases', r: 'SMJ', s: [1, 2, 3], need: () => S.drive.enabled },
+  { id: 'ecourts', ic: 'cases', t: 'ec_live', go: 'cases', r: 'SMJC', s: [1, 2, [3, 'SMJ'], [4, 'S'], 5, 6], need: () => S.ec && S.ec.enabled },
   { id: 'drafts', t: 'drafts', go: 'cases', r: 'SMJ', s: [1, 2, 3, 4] },
   { id: 'law', t: 'tab_law', go: 'law', r: 'SMJ', s: [1, 2, 3] },
   { id: 'notes', t: 'tab_notes', go: 'notes', r: 'SMJ', s: [1, 2, 3] },
@@ -549,7 +610,7 @@ function applyStatic() {
 }
 
 const S = { user: JSON.parse(localStorage.getItem('u') || 'null'), cases: [], fees: [], users: [], tasks: [], clients: [], notes: [], chamber: {}, dash: {},
-  docs: {}, drafts: {}, drive: { enabled: false }, law: null, lawQ: '', secTarget: null, cal: null, tab: 'dash', view: null, q: '', cq: '', nq: '', openAdd: '', prefill: null, pending: 0 };
+  docs: {}, drafts: {}, drive: { enabled: false }, ec: { enabled: false }, ecs: {}, law: null, lawQ: '', secTarget: null, cal: null, tab: 'dash', view: null, q: '', cq: '', nq: '', openAdd: '', prefill: null, pending: 0 };
 let TODAY = iso(new Date()), B = {};
 const TABS = {
   senior: [['dash', 'tab_dash'], ['cal', 'tab_cal'], ['cases', 'tab_cases'], ['clients', 'tab_clients'], ['tasks', 'tab_tasks'], ['fees', 'tab_fees'], ['notes', 'tab_notes'], ['law', 'tab_law'], ['team', 'tab_team'], ['backup', 'tab_backup'], ['help', 'tab_help']],
@@ -578,8 +639,8 @@ let tt; const toast = m => { const e = $('#toast'); e.textContent = m; e.hidden 
 async function api(p, o = {}) {
   const r = await fetch('/api' + p, { method: o.method || 'GET', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + localStorage.getItem('t') }, body: o.body ? JSON.stringify(o.body) : undefined });
   const d = await r.json().catch(() => ({}));
-  if (r.status === 401 && p !== '/login') { logout(); throw Object.assign(new Error(se(d.error || 'Login dobara karein')), { server: true }); }
-  if (!r.ok) throw Object.assign(new Error(se(d.error || 'Server error, dobara try karein')), { server: true });
+  if (r.status === 401 && p !== '/login') { logout(); throw Object.assign(new Error(se(d.error || 'Login dobara karein')), { server: true, code: d.code, status: r.status }); }
+  if (!r.ok) throw Object.assign(new Error(se(d.error || 'Server error, dobara try karein')), { server: true, code: d.code, status: r.status });
   return d;
 }
 async function send(method, path, body) {      // net nahi to queue mein; null return hota hai
@@ -608,6 +669,7 @@ const KEYS = ['cases', 'fees', 'users', 'tasks', 'clients', 'notes', 'chamber', 
 async function load() {
   try {
     S.cases = await api('/cases'); await kv.set('cases', S.cases);
+    try { S.ec = await api('/ecourts/status'); } catch { S.ec = { enabled: false }; }   // sab roles: live status button dikhe ya nahi
     if (canAdd()) {
       S.fees = await api('/fees'); await kv.set('fees', S.fees);
       S.users = await api('/users'); await kv.set('users', S.users);
@@ -760,11 +822,13 @@ function vCase(id) {
       [t('ph_cphone'), !cl && c.client_phone ? esc(c.client_phone) : ''], [t('note'), staff() ? esc(c.notes || '') : '']])}
       <div class="row">${canAdd() ? `<button class="ghost" data-a="edit" data-id="${esc(c.id)}">${t('edit')}</button><button class="ghost" data-a="fee" data-id="${esc(c.id)}">${t('fees')}</button>` : ''}
       ${canAdd() && c.client_phone && c.next_date && c.status === 'pending' ? `<button class="ghost" data-a="wa" data-id="${esc(c.id)}">${t('wa')}</button>` : ''}
-      ${c.cnr ? `<button class="ghost" data-a="ec" data-cnr="${esc(c.cnr)}">${t('ecourts')}</button>` : ''}
-      ${staff() ? `<button class="ghost" data-a="findsec" data-id="${esc(c.id)}">${t('findsec')}</button>` : ''}</div></section>`;
+      ${c.cnr ? `<button class="ghost" data-a="ec" data-cnr="${esc(c.cnr)}">${t('ecourts')}</button><button class="ghost" data-a="ecapp" data-cnr="${esc(c.cnr)}">${t('ec_app')}</button>` : ''}
+      ${c.cnr && S.ec && S.ec.enabled && !tmp(c.id) ? `<button class="ghost strong" data-a="eclive" data-id="${esc(c.id)}">${t('ec_live')}</button>` : ''}
+      ${staff() ? `<button class="ghost" data-a="findsec" data-id="${esc(c.id)}">${t('findsec')}</button>` : ''}</div></section>${ecPanel(c)}`;
   if (cr) h += `<section class="panel"><h3>${t('crim_h')}</h3>${dl([[t('fir_no'), esc(c.fir_no || '')], [t('fir_date'), c.fir_date ? esc(fmt(c.fir_date)) : ''],
     [t('sections'), secs.map(s => chip(s)).join(' ')], [t('bail'), esc(c.bail_status || '')], [t('cs_date'), c.chargesheet_date ? esc(fmt(c.chargesheet_date)) : ''],
     [t('ip_name'), esc(c.ip_name || '')], [t('io_name'), esc(c.io_name || '')]])}</section>`;
+  if (staff() && !tmp(c.id)) h += refPanel(c);
   if (canAdd()) { const b = B[c.id] || { ch: 0, pd: 0 }; h += `<section class="panel"><h3>${t('fees')}</h3><p class="m">${t('fee_sum', money(b.ch), money(b.pd), money(b.ch - b.pd))}</p>${upiBlock(c)}</section>`; }
   // documents
   const docs = S.docs[c.id];
@@ -779,6 +843,50 @@ function vCase(id) {
   }
   return h;
 }
+// Case Ref: judgment ka hawala + jude hue case
+const refText = r => r.kind === 'law' ? [r.title, r.cite].filter(Boolean).join(', ') : [r.cite, r.title].filter(Boolean).join(', ');
+function refPanel(c) {
+  const L = Array.isArray(c.case_refs) ? c.case_refs : [], mine = r => canAdd() || r.by === S.user.id;
+  const one = r => `<div class="fe ref"><div>${chip(t(r.kind === 'law' ? 'ref_law' : 'ref_case'), r.kind === 'law' ? 'g' : '')} <b>${esc(r.cite)}</b>${r.title ? `<p>${esc(r.title)}</p>` : ''}${r.note ? `<p class="m">${esc(r.note)}</p>` : ''}</div>
+    <div class="row"><button class="ghost" data-a="refcopy" data-id="${esc(c.id)}" data-r="${esc(r.id)}">${t('ref_copy')}</button>${mine(r) ? `<button class="ghost danger" data-a="refdel" data-id="${esc(c.id)}" data-r="${esc(r.id)}">${t('del')}</button>` : ''}</div></div>`;
+  const law = L.filter(r => r.kind === 'law'), cs = L.filter(r => r.kind !== 'law');
+  return `<section class="panel" id="refs"><h3>${t('ref_h')}</h3>${L.length ? law.concat(cs).map(one).join('') : `<p class="m">${t('ref_none')}</p>`}
+    <div class="row"><button class="ghost" data-a="refadd" data-id="${esc(c.id)}" data-k="law">${t('ref_addlaw')}</button><button class="ghost" data-a="refadd" data-id="${esc(c.id)}" data-k="case">${t('ref_addcase')}</button></div></section>`;
+}
+// eCourtsIndia live status panel (sirf jab button dabaya ho)
+function ecPanel(c) {
+  const e = S.ecs[c.id]; if (!e || !S.ec || !S.ec.enabled) return '';
+  const head = `<section class="panel ecp" id="ecp"><h3>${t('ec_h')}</h3>`, src = `<p class="m small">${t('ec_src')}</p>`;
+  if (e.loading) return head + `<p class="m">${t('loading')}</p>${src}</section>`;
+  if (e.err) return head + `<p class="err">${esc(e.err)}</p><div class="row"><button class="ghost" data-a="eclive" data-id="${esc(c.id)}">${t('ec_retry')}</button></div>${src}</section>`;
+  const d = e.data || {}, sn = d.snapshot || {}, hs = sn.hearings || [], os = sn.orders || [];
+  const vs = [(sn.petitioners || []).join(', '), (sn.respondents || []).join(', ')].filter(Boolean).join(' v ');
+  let h = head + dl([[t('ec_status'), esc(sn.status || '') + (sn.disposal ? ' • ' + esc(sn.disposal) : '')], [t('ec_next'), sn.next_date ? `<b>${esc(fmt(sn.next_date))}</b>` : ''],
+    [t('ph_court'), esc([sn.court, sn.district].filter(Boolean).join(', '))], [t('ec_judge'), esc((sn.judges || []).join(', '))], [t('ec_parties'), esc(vs)],
+    [t('ec_dec'), sn.decision_date ? esc(fmt(sn.decision_date)) : '']]);
+  if (d.differs) h += `<div class="ecdiff"><p>${esc(t('ec_differs', fmt(sn.next_date), d.stored_next ? fmt(d.stored_next) : '—'))}</p>${staff() ? `<button class="ghost strong" data-a="ecnd" data-id="${esc(c.id)}">${t('ec_upd')}</button>` : ''}</div>`;
+  if (hs.length) h += `<h4>${t('ec_hear')}</h4><ul class="ecl">${hs.map(x => `<li><b>${esc(x.date ? fmt(x.date) : '—')}</b> ${esc(x.purpose || '')}${x.judge ? ' • ' + esc(x.judge) : ''}</li>`).join('')}</ul>`;
+  h += `<h4>${t('ec_orders', sn.order_count || os.length)}</h4>${os.length ? `<ul class="ecl">${os.map(o => `<li><b>${esc(o.date ? fmt(o.date) : '—')}</b> ${esc(o.type || '')}</li>`).join('')}</ul>` : `<p class="m">${t('ec_noorder')}</p>`}`;
+  h += `<p class="m small">${t(d.cached ? 'ec_cached' : 'ec_fetched', fmtT(d.fetched_at))}</p>`;
+  if (d.queued) h += `<p class="m small">${t('ec_queued')}</p>`;
+  if (isSr()) h += `<div class="row"><button class="ghost" data-a="ecforce" data-id="${esc(c.id)}">${t('ec_force')}</button></div><p class="m small">${t('ec_force_n')}</p>`;
+  return h + src + '</section>';
+}
+async function ecFetch(id, force) {
+  if (!navigator.onLine) return toast(t('need_net'));
+  S.ecs[id] = { loading: true }; render();
+  try { S.ecs[id] = { data: await api(`/cases/${id}/ecourts-status`, { method: 'POST', body: force ? { force: true } : {} }) }; }
+  catch (e) { S.ecs[id] = { err: e.server ? (e.code && D['ecx_' + e.code] ? t('ecx_' + e.code) : e.message) : t('noserver') }; }
+  if (S.view && S.view.t === 'case' && S.view.id === id) { render(); $('#ecp')?.scrollIntoView({ block: 'nearest' }); }
+}
+// CNR clipboard mein (navigator.clipboard, warna textarea + execCommand)
+function copyText(v) {
+  const old = () => { const ta = document.createElement('textarea'); ta.value = v; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;top:-1000px;opacity:0';
+    document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch { /* chhod dein */ } ta.remove(); };
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(v).catch(old); else old();
+}
+const EC_WEB = 'https://services.ecourts.gov.in/ecourtindia_v6/';
+const EC_INTENT = 'intent://#Intent;package=in.gov.ecourts.eCourtsServices;S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Din.gov.ecourts.eCourtsServices;end';
 async function loadCaseExtras(id) {
   if (tmp(id) || !navigator.onLine) return;
   try {
@@ -1333,7 +1441,35 @@ const ACT = {
   },
   open: ({ id }) => { go({ t: 'case', id }); loadCaseExtras(id); },
   client: ({ id }) => go({ t: 'client', id }),
-  ec: ({ cnr }) => { navigator.clipboard?.writeText(cnr); window.open('https://services.ecourts.gov.in/ecourtindia_v6/', '_blank', 'noopener'); toast(t('cnr_copied')); },
+  ec: ({ cnr }) => { copyText(cnr); window.open(EC_WEB, '_blank', 'noopener'); toast(t('cnr_copied')); },
+  refadd: ({ id, k }) => {
+    if (!navigator.onLine) return toast(t('ref_net'));
+    const law = k === 'law', i = (n, ph, m, req) => `<input name="${n}" placeholder="${esc(ph)}" maxlength="${m}"${req ? ' required' : ''}>`;
+    $('#dlg').innerHTML = `<form data-f="refadd" data-id="${esc(id)}" data-k="${law ? 'law' : 'case'}"><h3>${t(law ? 'ref_addlaw' : 'ref_addcase')}</h3>
+      ${i('cite', t(law ? 'ref_cite_law' : 'ref_cite_case'), 200, true)}${i('title', t(law ? 'ref_title_law' : 'ref_title_case'), 200)}
+      <textarea name="note" rows="3" maxlength="400" placeholder="${esc(t(law ? 'ref_note_law' : 'ref_note_case'))}"></textarea>
+      <div class="row"><button class="pri">${t('save')}</button><button type="button" class="ghost" data-a="x">${t('close')}</button></div></form>`;
+    $('#dlg').showModal();
+  },
+  refcopy: ({ id, r }) => { const c = S.cases.find(x => x.id === id), x = c && (c.case_refs || []).find(y => y.id === r); if (!x) return; copyText(refText(x)); toast(t('ref_copied')); },
+  refdel: async ({ id, r }) => {
+    if (!confirm(t('ref_del_q'))) return;
+    const d = await api('/cases/' + id + '/refs/' + encodeURIComponent(r), { method: 'DELETE' }), c = S.cases.find(x => x.id === id);
+    if (c) { c.case_refs = d.case_refs; await kv.set('cases', S.cases); } render();
+  },
+  ecapp: ({ cnr }) => {      // eCourts Services app mein CNR ka deep link nahi hai: sirf copy + app kholna (user khud paste kare)
+    copyText(cnr);
+    if (/Android/i.test(navigator.userAgent)) { toast(t('ec_app_copied')); location.href = EC_INTENT; }
+    else { window.open(EC_WEB, '_blank', 'noopener'); toast(t('cnr_copied')); }
+  },
+  eclive: ({ id }) => ecFetch(id, false),
+  ecforce: ({ id }) => ecFetch(id, true),
+  ecnd: async ({ id }) => {
+    const e = S.ecs[id], nd = e && e.data && e.data.snapshot && e.data.snapshot.next_date, c = S.cases.find(x => x.id === id);
+    if (!nd || !c || !staff()) return;
+    await send('PATCH', `/cases/${id}/next-date`, { next_date: nd });
+    c.next_date = nd; e.data.stored_next = nd; e.data.differs = false; await kv.set('cases', S.cases); toast(t('ec_upd_ok')); render();
+  },
   fee: ({ id }) => {
     const c = S.cases.find(x => x.id === id), b = B[id] || { ch: 0, pd: 0 };
     $('#dlg').innerHTML = `<form data-f="fee" data-id="${esc(id)}"><h3>${esc(c.case_no || c.cnr)}</h3>
@@ -1376,7 +1512,7 @@ const ACT = {
   },
   edit: ({ id }) => {
     const c = S.cases.find(x => x.id === id), f = (n, p, m) => `<input name="${n}" placeholder="${p}" value="${esc(c[n])}" maxlength="${m}">`, cl = clientOf(c);
-    $('#dlg').innerHTML = `<form data-f="edit" data-id="${esc(id)}"><h3>${esc(c.case_no || c.cnr)}</h3>${f('case_no', t('ph_caseno'), 60)}
+    $('#dlg').innerHTML = `<form data-f="edit" data-id="${esc(id)}"><h3>${esc(c.case_no || c.cnr)}</h3>${f('case_no', t('ph_caseno'), 60)}${f('cnr', t('ph_cnr'), 40)}
       <label>${t('client')}<input name="client_name" list="cl-list" autocomplete="off" placeholder="${t('ph_client')}" maxlength="120" value="${esc(cl ? cl.name : '')}"></label>
       ${f('party_name', t('ph_party'), 160)}${f('court', t('ph_court'), 60)}${f('ps_name', t('ph_ps'), 80)}${f('stage', t('ph_stage'), 80)}${f('client_phone', t('ph_cphone'), 20)}${f('notes', t('note'), 1000)}
       ${typeSel(c.case_type || '')}${crimFields(c)}
@@ -1459,6 +1595,11 @@ async function addSection(caseId, sec) {
 }
 const formData = f => { const b = Object.fromEntries(new FormData(f)); for (const k in b) if (typeof b[k] === 'string') b[k] = b[k].trim(); return b; };
 const FORM = {
+  refadd: async f => {
+    const b = Object.fromEntries(new FormData(f)); b.kind = f.dataset.k;
+    const d = await api('/cases/' + f.dataset.id + '/refs', { method: 'POST', body: b }), c = S.cases.find(x => x.id === f.dataset.id);
+    if (c) { c.case_refs = d.case_refs; await kv.set('cases', S.cases); } $('#dlg').close(); render(); $('#refs')?.scrollIntoView({ block: 'nearest' });
+  },
   link: async f => {
     const b = formData(f), id = f.dataset.id; let u = null;
     try { u = new URL(b.url); } catch { u = null; }
@@ -1491,6 +1632,7 @@ const FORM = {
   edit: async f => {
     const b = formData(f), c = S.cases.find(x => x.id === f.dataset.id), nm = (b.client_name || '').trim();
     linkClient(b, false);
+    if (typeof b.cnr === 'string') b.cnr = b.cnr.toUpperCase().replace(/[\s-]/g, '');
     if (b.make_client) {     // edit mein naya client: pehle client banao (net chahiye)
       const n = await api('/clients', { method: 'POST', body: { name: nm, phone: b.client_phone || '', client_ref: uid() } });
       if (n.id) { S.clients.push(n); b.client_id = n.id; } delete b.make_client; delete b.client_name;
@@ -1537,7 +1679,7 @@ const FORM = {
 };
 function logout() {
   localStorage.removeItem('t'); localStorage.removeItem('u'); S.user = null; S.view = null; S.secTarget = null;
-  S.cases = []; S.fees = []; S.users = []; S.tasks = []; S.clients = []; S.notes = []; S.chamber = {}; S.dash = {}; S.docs = {}; S.drafts = {}; S.drive = { enabled: false };
+  S.cases = []; S.fees = []; S.users = []; S.tasks = []; S.clients = []; S.notes = []; S.chamber = {}; S.dash = {}; S.docs = {}; S.drafts = {}; S.drive = { enabled: false }; S.ec = { enabled: false }; S.ecs = {};
   kv.clear(); render();
 }
 

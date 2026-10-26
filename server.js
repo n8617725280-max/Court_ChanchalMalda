@@ -1,4 +1,4 @@
-// Malda Court Connect v5 — server
+// Court Connect v5 — server
 require('dotenv').config();
 const express = require('express'), path = require('path'), crypto = require('crypto');
 const bcrypt = require('bcryptjs'), jwt = require('jsonwebtoken');
@@ -6,6 +6,7 @@ const helmet = require('helmet'), rateLimit = require('express-rate-limit');
 const { createClient } = require('@supabase/supabase-js');
 const { makeStorage, MAXDOC } = require('./storage');   // server-side modules: PAGES list mein nahi, bahar nahi dikhte
 const { makeDrive } = require('./drive');
+const { makeEcourts, EcErr, ERR: EC_ERR } = require('./ecourts');
 
 const { SUPABASE_URL, SUPABASE_SERVICE_KEY, JWT_SECRET, SETUP_KEY } = process.env;
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !JWT_SECRET || JWT_SECRET.length < 32) {
@@ -16,6 +17,7 @@ const db = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, { auth: { persistSes
 const DUMMY = bcrypt.hashSync('dummy-password', 10);
 let store; try { store = makeStorage(db); } catch (e) { console.error(e.message + '. Server band.'); process.exit(1); }
 const drive = makeDrive(db);     // GOOGLE_* aur DRIVE_TOKEN_KEY na hon to drive.enabled = false (feature chhupa rahega)
+const ecourts = makeEcourts(db); // ECOURTSINDIA_KEY na ho to ecourts.enabled = false (live status chhupa rahega)
 
 const app = express();
 app.set('trust proxy', 1);
@@ -186,7 +188,13 @@ app.patch('/api/users/:id', auth, need('senior'), wrap(async (q, s) => {
 
 // ---------- cases ----------
 const CF = 'id,cnr,case_no,party_name,court,ps_name,stage,next_date,status,notes,assigned_to,client_user_id,client_phone,created_at,'
-  + 'client_id,case_type,fir_no,fir_date,sections,bail_status,chargesheet_date,ip_name,io_name';
+  + 'client_id,case_type,fir_no,fir_date,sections,bail_status,chargesheet_date,ip_name,io_name,case_refs';
+let REFS_OK = null;     // update-6.sql na chala ho to case_refs column ke bina chalo (pehli baar jaanch)
+async function refsOk() {
+  if (REFS_OK === null) { const { error } = await db.from('cases').select('case_refs').limit(1); REFS_OK = !(error && /case_refs/.test(String(error.message || ''))); if (!REFS_OK) console.warn('update-6.sql abhi nahi chala: Case Ref band'); }
+  return REFS_OK;
+}
+const cf = () => REFS_OK ? CF : CF.replace(',case_refs', '');
 const CASE_TYPES = ['civil', 'criminal', 'other'];
 // naye (v5) case fields: text + date. Galat date par error string lautata hai
 function caseExtra(b, row) {
@@ -207,13 +215,14 @@ async function newClient(ch, uid, b) {      // case ke saath naya client (auto-c
 }
 app.get('/api/cases', auth, wrap(async (q, s) => {
   const u = q.user;
-  const rows = await all(() => {
-    let x = db.from('cases').select(CF).eq('chamber_id', u.chamber_id).order('created_at').order('id');
+  const mk = () => {
+    let x = db.from('cases').select(cf()).eq('chamber_id', u.chamber_id).order('created_at').order('id');
     if (u.role === 'junior') x = x.eq('assigned_to', u.id);
     if (u.role === 'client') x = x.eq('client_user_id', u.id);
     return x;
-  });
-  if (u.role === 'client') rows.forEach(c => { delete c.notes; delete c.assigned_to; delete c.client_user_id; delete c.client_phone; delete c.client_id; });
+  };
+  await refsOk(); const rows = await all(mk);
+  if (u.role === 'client') rows.forEach(c => { delete c.case_refs; delete c.notes; delete c.assigned_to; delete c.client_user_id; delete c.client_phone; delete c.client_id; });
   s.json(rows);
 }));
 app.post('/api/cases', auth, need('senior', 'munshi'), wrap(async (q, s) => {
@@ -229,7 +238,8 @@ app.post('/api/cases', auth, need('senior', 'munshi'), wrap(async (q, s) => {
   // offline retry: pehle check karein ki ye client_ref pehle hi save to nahi hua (warna duplicate client banta)
   if (row.client_ref) { const { data: had } = await db.from('cases').select('id').eq('chamber_id', ch).eq('client_ref', row.client_ref).maybeSingle(); if (had) return s.json({ ok: 1, dup: true }); }
   if (!row.client_id && b.make_client) row.client_id = await newClient(ch, q.user.id, b);
-  const { data, error } = await db.from('cases').upsert(row, { onConflict: 'chamber_id,client_ref', ignoreDuplicates: true }).select(CF).maybeSingle();
+  await refsOk();
+  const { data, error } = await db.from('cases').upsert(row, { onConflict: 'chamber_id,client_ref', ignoreDuplicates: true }).select(cf()).maybeSingle();
   if (error) return s.status(error.code === '23505' ? 409 : 500).json({ error: error.code === '23505' ? 'Ye CNR is chamber mein pehle se hai' : 'Case save nahi hua' });
   s.json(data || { ok: 1, dup: true });
 }));
@@ -259,6 +269,7 @@ app.patch('/api/cases/:id', auth, need('senior', 'munshi'), wrap(async (q, s) =>
   const b = q.body, u = {};
   for (const [k, m] of [['case_no', 60], ['party_name', 160], ['court', 60], ['ps_name', 80], ['stage', 80], ['notes', 1000]]) if (typeof b[k] === 'string') u[k] = str(b[k], m);
   if (typeof b.client_phone === 'string') u.client_phone = phone(b.client_phone);
+  if (typeof b.cnr === 'string') u.cnr = str(b.cnr, 40).toUpperCase().replace(/[\s-]/g, '') || null;   // CNR baad mein bhi jod/badal sakte hain
   const bad = caseExtra(b, u); if (bad) return s.status(400).json({ error: bad });
   if (b.client_id === null || b.client_id === '') u.client_id = null;
   else if (b.client_id) { if (!(await clientInChamber(b.client_id, c.chamber_id))) return s.status(400).json({ error: 'Client nahi mila' }); u.client_id = b.client_id; }
@@ -268,10 +279,37 @@ app.patch('/api/cases/:id', auth, need('senior', 'munshi'), wrap(async (q, s) =>
     else if (b[k]) { if (!isId(b[k]) || !(await inChamber(b[k], c.chamber_id, role))) return s.status(400).json({ error: 'User galat hai' }); u[k] = b[k]; }
   }
   if (!Object.keys(u).length) return s.status(400).json({ error: 'Kuch badla nahi' });
-  ok(await db.from('cases').update(u).eq('id', c.id).eq('chamber_id', c.chamber_id));
+  const { error } = await db.from('cases').update(u).eq('id', c.id).eq('chamber_id', c.chamber_id);
+  if (error) { if (error.code === '23505') return s.status(409).json({ error: 'Yeh CNR pehle se kisi aur case mein hai' }); throw error; }
   s.json({ ok: 1 });
 }));
 // BNS finder se "case mein jodein": section list mein jodta hai (junior bhi apne assigned case mein)
+// Case Ref: judgment ka hawala (law) ya juda hua case (case). cases.case_refs jsonb list mein.
+const REF_MAX = 40;
+app.post('/api/cases/:id/refs', auth, need('senior', 'munshi', 'junior'), wrap(async (q, s) => {
+  if (!(await refsOk())) return s.status(503).json({ error: 'Pehle Supabase mein update-6.sql chalayein', code: 'no_refs' });
+  const c = await getCase(q, q.params.id, ',case_refs'); if (!c) return s.status(404).json({ error: 'Case nahi mila' });
+  const b = q.body || {}, kind = b.kind === 'case' ? 'case' : b.kind === 'law' ? 'law' : null;
+  const cite = str(b.cite, 200), title = str(b.title, 200), note = str(b.note, 400);
+  if (!kind) return s.status(400).json({ error: 'Ref ka type galat hai' });
+  if (!cite) return s.status(400).json({ error: kind === 'law' ? 'Citation likhein' : 'Case number likhein' });
+  const list = Array.isArray(c.case_refs) ? c.case_refs : [];
+  if (list.length >= REF_MAX) return s.status(400).json({ error: 'Ek case mein ' + REF_MAX + ' se zyada ref nahi' });
+  const ref = { id: crypto.randomUUID(), kind, cite, title, note, by: q.user.id, at: new Date().toISOString() };
+  const case_refs = [...list, ref];
+  ok(await db.from('cases').update({ case_refs }).eq('id', c.id).eq('chamber_id', c.chamber_id));
+  s.json({ ok: 1, case_refs });
+}));
+app.delete('/api/cases/:id/refs/:rid', auth, need('senior', 'munshi', 'junior'), wrap(async (q, s) => {
+  if (!(await refsOk())) return s.status(503).json({ error: 'Pehle Supabase mein update-6.sql chalayein', code: 'no_refs' });
+  const c = await getCase(q, q.params.id, ',case_refs'); if (!c) return s.status(404).json({ error: 'Case nahi mila' });
+  const list = Array.isArray(c.case_refs) ? c.case_refs : [], r = list.find(x => x && x.id === q.params.rid);
+  if (!r) return s.status(404).json({ error: 'Ref nahi mila' });
+  if (q.user.role === 'junior' && r.by !== q.user.id) return s.status(403).json({ error: 'Sirf apna ref hata sakte hain' });
+  const case_refs = list.filter(x => x !== r);
+  ok(await db.from('cases').update({ case_refs }).eq('id', c.id).eq('chamber_id', c.chamber_id));
+  s.json({ ok: 1, case_refs });
+}));
 app.post('/api/cases/:id/sections', auth, need('senior', 'munshi', 'junior'), wrap(async (q, s) => {
   const c = await getCase(q, q.params.id, ',sections'); if (!c) return s.status(404).json({ error: 'Case nahi mila' });
   const add = str(q.body.sec, 60); if (!add) return s.status(400).json({ error: 'Galat request' });
@@ -487,6 +525,20 @@ app.post('/api/drive/disconnect', auth, need('senior', 'munshi', 'junior'), driv
   await drive.disconnect(q.user); s.json({ ok: 1 });
 }));
 
+// ---------- eCourtsIndia live status (CNR se) ----------
+// Key sirf server par. 12 ghante cache, chamber ki rozana seema (ECOURTS_DAILY_LIMIT, default 30), force refresh sirf senior.
+const ecLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: 60, standardHeaders: true, legacyHeaders: false, message: { error: 'Bahut koshish ho gayi. 15 minute baad try karein' } });
+const ecFail = (s, code) => { const [st, msg] = EC_ERR[code] || EC_ERR.upstream; s.status(st).json({ error: msg, code }); };
+app.get('/api/ecourts/status', auth, (q, s) => s.json({ enabled: ecourts.enabled }));
+app.post('/api/cases/:id/ecourts-status', auth, ecLimit, wrap(async (q, s) => {
+  if (!ecourts.enabled) return ecFail(s, 'off');
+  const c = await getCase(q, q.params.id, ',cnr'); if (!c) return s.status(404).json({ error: 'Case nahi mila' });
+  const force = !!(q.body && q.body.force === true);
+  if (force && q.user.role !== 'senior') return s.status(403).json({ error: 'Is kaam ki ijazat nahi hai', code: 'forbidden' });
+  try { s.set('Cache-Control', 'no-store').json(await ecourts.status(c, q.user, force)); }
+  catch (e) { if (e instanceof EcErr) return ecFail(s, e.code); throw e; }
+}));
+
 // ---------- drafts (Vakalatnama, affidavit, bail wagairah) ----------
 const DRAFT_KINDS = ['vakalatnama', 'affidavit', 'affidavit_bn', 'notice', 'bail_480', 'bail_482', 'bail_bn', 'adjourn', 'hazira', 'other'];
 const DRF = 'id,case_id,kind,title,body,created_by,created_at,updated_at';
@@ -637,6 +689,6 @@ app.use((e, q, s, n) => {
 
 if (require.main === module) {
   store.current.ensure();
-  app.listen(process.env.PORT || 10000, () => console.log('Malda Court Connect v5 chalu hai'));
+  app.listen(process.env.PORT || 10000, () => console.log('Court Connect v5 chalu hai'));
 }
 module.exports = app;

@@ -1,4 +1,4 @@
-/* qr.js — QR Code Generator for JavaScript by Kazuhiko Arase (MIT license), v1.4.4, unmodified below. Malda Court Connect: UTF-8 mode + qrSvg() helper added at the end. */
+/* qr.js — QR Code Generator for JavaScript by Kazuhiko Arase (MIT license), v1.4.4, unmodified below. Court Connect: UTF-8 mode + qrSvg() helper added at the end. */
 //---------------------------------------------------------------------
 //
 // QR Code Generator for JavaScript
@@ -2297,7 +2297,7 @@ var qrcode = function() {
     return qrcode;
 }));
 
-// ---- Malda Court Connect helper (MIT) ----
+// ---- Court Connect helper (MIT) ----
 qrcode.stringToBytes = qrcode.stringToBytesFuncs['UTF-8'];
 // text -> <svg> string (sirf rects, koi script nahi). size = px
 function qrSvg(text, size) {

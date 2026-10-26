@@ -1,4 +1,4 @@
-// Malda Court Connect — document storage (server-side only; ye file PAGES list mein NAHI hai)
+// Court Connect — document storage (server-side only; ye file PAGES list mein NAHI hai)
 // Do backend: 'supabase' (default, private bucket) aur 'r2' (Cloudflare R2, S3-compatible API).
 // Har document row mein uska backend likha hota hai, isliye backend badalne ke baad bhi purani files khulti hain.
 // R2 ke liye AWS Signature V4 yahin Node crypto se bana hai (koi naya npm package nahi).

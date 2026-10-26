@@ -1,4 +1,4 @@
-# Malda Court Connect v5
+# Court Connect v5
 
 Case diary, next date, fees ledger aur backup. Laptop aur mobile dono par chalta hai. Net na ho to entry phone mein save hoti hai aur net aate hi sync hoti hai.
 
@@ -77,12 +77,12 @@ Owner Panel: /owner.html (Setup key se khulta hai). Chamber banana/band karna, k
    - `.github/workflows/backup.yml` pehle se hai to chhod dein; nahi hai to BACKUP.md dekhein.
    - `.env` ya koi password wali file kabhi upload na karein.
 3. **Render apne aap deploy karega**
-   - GitHub commit ke baad Render khud naya version banata hai (2-5 minute). Render dashboard > Logs mein "Malda Court Connect v5 chalu hai" dikhe to ho gaya.
+   - GitHub commit ke baad Render khud naya version banata hai (2-5 minute). Render dashboard > Logs mein "Court Connect v5 chalu hai" dikhe to ho gaya.
    - Agar auto-deploy band hai: Render > service > **Manual Deploy > Deploy latest commit**.
    - Koi naya environment variable nahi chahiye; purane 4 hi kaafi hain.
 4. **Test karein**
    - App kholein, ek baar page refresh karein (purana cache hatane ke liye; mobile app band karke dobara kholein).
-   - Senior se login > Dashboard aur "Malda Court Connect mein swagat" popup dikhe (sirf pehli baar). Madad / Guide tab khulna chahiye.
+   - Senior se login > Dashboard aur "Court Connect mein swagat" popup dikhe (sirf pehli baar). Madad / Guide tab khulna chahiye.
    - Team > Chamber settings: vakil ka naam aur UPI ID save karein.
    - Clients > naya client; Cases > naya case (Criminal chunein, FIR bharein).
    - Case > Kholein > ek chhoti PDF upload, phir Download.
@@ -160,7 +160,7 @@ Steps:
 2. **APIs & Services > Library** > "Google Drive API" khojein > **Enable**.
 3. **APIs & Services > OAuth consent screen** (naye console mein "Google Auth Platform"):
    - User type: **External** > Create.
-   - App name `Malda Court Connect`, support email (aapka), developer contact email (aapka). App domain/homepage mein `https://court-chanchalmalda.onrender.com` daal sakte hain.
+   - App name `Court Connect`, support email (aapka), developer contact email (aapka). App domain/homepage mein `https://court-chanchalmalda.onrender.com` daal sakte hain.
    - **Scopes / Data access** > Add scope > `https://www.googleapis.com/auth/drive.file` (".../auth/drive.file — See, edit, create and delete only the specific Google Drive files you use with this app") > Save. Koi aur scope NA jodein.
    - **Test users** > Add users: jin vakilon/munshiyon ko abhi chalana hai unke Gmail (Testing mein max 100 log).
 4. **Publishing / verification**:
@@ -176,3 +176,38 @@ Steps:
 **Suraksha**: app sirf `drive.file` maangta hai, yaani sirf wahi files dekh/bana sakta hai jo app ne khud banayi. Vakil ki baaki Drive app ko nahi dikhti. Refresh token server par AES-256-GCM se encrypt hokar rakha jaata hai. "Drive hatayein" dabane par Google se token revoke hota hai aur row delete. Kisi ne Drive hata di ho to uski upload ki Drive files app se nahi khulengi (Drive mein unke paas surakshit rahengi); wahi Gmail dobara jodne par phir khulne lagti hain.
 
 **Vakil ko kya batana hai**: "Kisi bhi case > Documents > Google Drive jodein (ek baar) > apna Gmail chunein > Allow." Phone aur computer dono par yahi. Bas.
+
+## Update 5 (v5.2): CNR se case status
+
+**Free buttons (bina key ke chalte hain)**
+- "eCourts par dekhein": CNR copy hota hai aur official eCourts site khulti hai. Wahan CAPTCHA bharna padega, paste karke search karein.
+- "eCourts App mein kholein": CNR copy hota hai aur phone ka official eCourts Services app khulta hai (na ho to Play Store). App mein "Search by CNR" pe paste karein. App apne aap CNR nahi bharta.
+
+**Live status dekhein (optional, eCourtsIndia private service, paid)**
+1. https://ecourtsindia.com/auth/register pe free account banayein. ₹200 ka free credit milta hai, card nahi lagta.
+2. Dashboard → API keys (https://ecourtsindia.com/dashboard/api/keys) → naya token banayein (`eci_live_...` se shuru).
+3. Render → apni service → Environment → `ECOURTSINDIA_KEY` = woh token. Chahein to `ECOURTS_DAILY_LIMIT` (default 30 lookup prati chamber prati din).
+4. Supabase SQL Editor mein `update-5.sql` chalayein (dobara chalana safe hai).
+5. Render redeploy karein, app ek baar refresh karein.
+
+Kharcha (Pay As You Go, Oct 2026): Case Detail ₹1.50, Refresh ₹0.15. Packs ₹1,000–5,000 + 18% GST. Fail hui call ka paisa nahi katta. Ek case ka result 12 ghante cache rehta hai, us beech dobara dekhna free.
+
+Dhyan rahein: key kabhi GitHub ya app mein na daalein, sirf Render Environment mein. Yeh sarkari service nahi hai; zaroori faisle se pehle official eCourts pe verify karein. "Abhi refresh" (sirf senior) mein naya data aane mein kuch minute lag sakte hain.
+
+**SQL kram:** `supabase.sql` (sirf nayi install) → `update-3.sql` → `update-4.sql` → `update-5.sql` → `update-6.sql` → `grants.sql`
+
+**Zaroori (30 Oct 2026 se):** Supabase ab nayi tables ko apne aap API nahi deta. Saari SQL ke baad `grants.sql` ek baar Run karein, warna "permission denied" aayega. Dobara chalana safe hai.
+
+
+## v5.3: Case Ref (judgment ka hawala + jude hue case)
+
+Har case ke andar ab "Case Ref" hissa hai (senior, munshi, aur assigned junior ko dikhta hai; client ko nahi).
+- **+ Judgment ka hawala**: citation (jaise `(2014) 8 SCC 273`), case ka naam (Arnesh Kumar vs State of Bihar) aur kis baat ke liye.
+- **+ Juda case**: case number (Bail Misc 120/2026, appeal, ya CNR), court (Sessions Court Malda, Calcutta High Court) aur rishta/note.
+- **Copy** button hawala copy karta hai, seedha draft ya petition mein paste karein.
+- Junior sirf apna joda hua ref hata sakta hai; senior/munshi koi bhi.
+
+**Lagane ka kram:**
+1. Supabase SQL Editor mein `update-6.sql` Run karein (ek column jodta hai, dobara chalana safe). Phir `grants.sql`.
+2. GitHub pe badli files daalein: `server.js`, `app.js`, `app.css`, `sw.js`, `package.json`, `supabase.sql`, `update-6.sql` (naya), `grants.sql`, `README.md`.
+3. Agar `update-6.sql` bhool gaye, app chalta rahega, bas Case Ref save karte waqt "Pehle Supabase mein update-6.sql chalayein" aayega.

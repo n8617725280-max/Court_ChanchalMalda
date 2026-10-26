@@ -34,3 +34,9 @@ alter table drive_tokens enable row level security;
 alter table documents enable row level security;
 revoke all on drive_tokens from anon, authenticated;
 revoke all on documents from anon, authenticated;
+
+-- Supabase 30 Oct 2026 badlav: nayi tables ko server (service_role) ke liye saaf GRANT chahiye.
+-- anon/authenticated ko kuch nahi milta; app sirf server se data padhta hai.
+grant usage on schema public to service_role;
+grant select, insert, update, delete on drive_tokens, documents to service_role;
+grant usage, select on all sequences in schema public to service_role;
